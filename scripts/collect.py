@@ -202,7 +202,9 @@ def collect_laws(oc, existing=None):
 def collect_cases(oc):
     out = []
     for kw in CFG["case_keywords"]:
-        for r in law_search(oc, "prec", kw, {"sort": "ddes"}):
+        # search=2: 사건명이 아니라 판결문 본문에서 검색 (통상임금·괴롭힘 사건은 사건명이 '임금', '해고무효확인'이라서)
+        # display=100: 키워드당 최신 100건까지
+        for r in law_search(oc, "prec", kw, {"sort": "ddes", "search": 2, "display": 100}):
             seq = r.get("판례일련번호")
             if not seq:
                 continue
