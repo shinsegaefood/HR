@@ -1,0 +1,17 @@
+{
+ "lastRun": "2026-10-28 13:03",
+ "today": "2026-10-28",
+ "firstRun": true,
+ "months": [
+  "2026-10.json"
+ ],
+ "total": 739,
+ "added": 739,
+ "stageChanged": 0,
+ "status": {
+  "의안": "정상 612건",
+  "법령": "실패: <urlopen error timed out>",
+  "판례": "실패: <urlopen error timed out>",
+  "뉴스": "정상 127건"
+ }
+}
