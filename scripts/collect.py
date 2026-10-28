@@ -1,0 +1,254 @@
+"""인사이슈 보드 — 매일 자동수집 스크립트 (GitHub Actions에서 실행)
+
+출처별로 가져와서 data/YYYY-MM.json 에 쌓는다.
+- 키는 환경변수(GitHub 비밀값)로만 받는다. 저장 파일·링크에는 절대 넣지 않는다.
+- 한 출처가 실패해도 나머지는 저장하고, 실패 내역은 data/index.json 에 남긴다.
+- 외부 라이브러리 없이 파이썬 기본 기능만 사용한다.
+"""
+import json, os, re, sys, html, glob, datetime, urllib.request, urllib.parse
+from email.utils import parsedate_to_datetime
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA = os.path.join(ROOT, "data")
+KST = datetime.timezone(datetime.timedelta(hours=9))
+NOW = datetime.datetime.now(KST)
+TODAY = NOW.date()
+
+CFG = json.load(open(os.path.join(ROOT, "config", "settings.json"), encoding="utf-8"))
+ENV = os.environ.get
+
+
+# ───────────────────────── 공통 ─────────────────────────
+def http_json(url, headers=None, timeout=30):
+    req = urllib.request.Request(url, headers={"User-Agent": "hr-issue-board/1.0", **(headers or {})})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def clean(s):
+    """태그 제거 + HTML 엔티티 복원 + 공백 정리"""
+    s = re.sub(r"<[^>]+>", "", str(s or ""))
+    return re.sub(r"\s+", " ", html.unescape(s)).strip()
+
+
+def ymd(s):
+    """'20261104' / '2026-11-04' / '2026.11.04' → '2026-11-04', 실패 시 ''"""
+    d = re.sub(r"\D", "", str(s or ""))
+    if len(d) >= 8:
+        return f"{d[0:4]}-{d[4:6]}-{d[6:8]}"
+    return ""
+
+
+def tool_for(text):
+    hits = [t["name"] for t in CFG["tools"] if any(m in text for m in t["match"])]
+    return ", ".join(hits)
+
+
+def item(**kw):
+    base = {"id": "", "cat": "", "title": "", "date": "", "source": "", "url": "",
+            "summary": "", "effDate": "", "stage": "", "stageChanged": False,
+            "tool": "", "collected": TODAY.isoformat()}
+    base.update(kw)
+    base["tool"] = base["tool"] or tool_for(base["title"])
+    return base
+
+
+# ───────────────────────── 국회 의안 ─────────────────────────
+ASSEMBLY_URL = "https://open.assembly.go.kr/portal/openapi/nzmimeepazxkubdpn"
+
+
+def bill_stage(r):
+    if r.get("PROC_RESULT"):
+        return "본회의 " + r["PROC_RESULT"]
+    if r.get("LAW_PROC_DT"):
+        return "법사위 심사"
+    if r.get("CMT_PROC_DT"):
+        return "위원회 의결" + (f"({r['CMT_PROC_RESULT_CD']})" if r.get("CMT_PROC_RESULT_CD") else "")
+    if r.get("COMMITTEE_DT") or r.get("COMMITTEE"):
+        return "위원회 심사"
+    return "발의"
+
+
+def collect_bills(key, prev_stages):
+    out = []
+    for kw in CFG["bill_keywords"]:
+        q = urllib.parse.urlencode({"KEY": key, "Type": "json", "pIndex": 1, "pSize": 100,
+                                    "AGE": CFG["assembly_age"], "BILL_NAME": kw})
+        js = http_json(f"{ASSEMBLY_URL}?{q}")
+        block = js.get("nzmimeepazxkubdpn")
+        if not block:  # 결과 없음 (INFO-200) 또는 오류
+            res = js.get("RESULT", {})
+            if res.get("CODE") not in (None, "INFO-200"):
+                raise RuntimeError(f"국회 API 오류: {res.get('CODE')} {res.get('MESSAGE')}")
+            continue
+        rows = block[1].get("row", []) if len(block) > 1 else []
+        for r in rows:
+            bid = r.get("BILL_ID") or r.get("BILL_NO")
+            if not bid:
+                continue
+            stage = bill_stage(r)
+            out.append(item(
+                id=f"bill:{bid}", cat="bill", title=clean(r.get("BILL_NAME")),
+                date=ymd(r.get("PROPOSE_DT")), source=clean(r.get("PROPOSER")) or "국회",
+                url=r.get("DETAIL_LINK") or "", stage=stage,
+                stageChanged=(bid in prev_stages and prev_stages[bid] != stage),
+                summary=clean(r.get("COMMITTEE")) and f"소관: {clean(r.get('COMMITTEE'))}"))
+    return out
+
+
+# ───────────────────────── 법제처 (법령·판례) ─────────────────────────
+LAW_URL = "https://www.law.go.kr/DRF/lawSearch.do"
+
+
+def law_search(oc, target, query, extra=None):
+    p = {"OC": oc, "target": target, "type": "JSON", "query": query, "display": 20}
+    p.update(extra or {})
+    js = http_json(f"{LAW_URL}?{urllib.parse.urlencode(p)}")
+    root = js.get("LawSearch") or js.get("PrecSearch") or {}
+    rows = root.get(target) or []
+    return rows if isinstance(rows, list) else [rows]
+
+
+def collect_laws(oc):
+    out = []
+    for name in CFG["laws"]:
+        for r in law_search(oc, "law", name, {"sort": "ddes"}):
+            title = clean(r.get("법령명한글"))
+            if name not in title:
+                continue
+            seq = r.get("법령일련번호") or r.get("법령ID")
+            kind = clean(r.get("제개정구분명"))
+            out.append(item(
+                id=f"law:{seq}", cat="law", title=f"{title} {kind}".strip(),
+                date=ymd(r.get("공포일자")), effDate=ymd(r.get("시행일자")),
+                source=clean(r.get("소관부처명")) or "법제처",
+                # 공개 링크만 저장 (OC가 들어간 API 링크는 저장하지 않음)
+                url="https://www.law.go.kr/법령/" + urllib.parse.quote(title),
+                summary=f"공포번호 {clean(r.get('공포번호'))}" if r.get("공포번호") else ""))
+    return out
+
+
+def collect_cases(oc):
+    out = []
+    for kw in CFG["case_keywords"]:
+        for r in law_search(oc, "prec", kw, {"sort": "ddes"}):
+            seq = r.get("판례일련번호")
+            if not seq:
+                continue
+            out.append(item(
+                id=f"case:{seq}", cat="case",
+                title=f"{clean(r.get('사건명'))} ({clean(r.get('사건번호'))})",
+                date=ymd(r.get("선고일자")), source=clean(r.get("법원명")) or "법원",
+                url=f"https://www.law.go.kr/precInfoP.do?precSeq={seq}",
+                summary=f"검색어: {kw}"))
+    return out
+
+
+# ───────────────────────── 네이버 뉴스 ─────────────────────────
+def collect_news(cid, secret):
+    out = []
+    for q in CFG["news_queries"]:
+        u = "https://openapi.naver.com/v1/search/news.json?" + urllib.parse.urlencode(
+            {"query": q, "display": 20, "sort": "date"})
+        js = http_json(u, {"X-Naver-Client-Id": cid, "X-Naver-Client-Secret": secret})
+        for r in js.get("items", []):
+            link = r.get("originallink") or r.get("link")
+            try:
+                d = parsedate_to_datetime(r.get("pubDate")).astimezone(KST).date().isoformat()
+            except Exception:
+                d = TODAY.isoformat()
+            host = urllib.parse.urlparse(link).netloc.replace("www.", "")
+            desc = clean(r.get("description"))
+            out.append(item(
+                id=f"news:{link}", cat="news", title=clean(r.get("title")),
+                date=d, source=host, url=link,
+                summary=(desc[:90] + "…") if len(desc) > 90 else desc,  # 본문 저장 안 함
+                tool=""))  # 뉴스는 도구 영향 판정에서 제외
+    return out
+
+
+# ───────────────────────── 저장 ─────────────────────────
+def load_existing():
+    by_id = {}
+    for f in sorted(glob.glob(os.path.join(DATA, "20??-??.json"))):
+        for it in json.load(open(f, encoding="utf-8")):
+            by_id[it["id"]] = (os.path.basename(f), it)
+    return by_id
+
+
+def save(new_items, existing):
+    os.makedirs(DATA, exist_ok=True)
+    month_file = f"{TODAY:%Y-%m}.json"
+    months = {}
+    for fname, it in existing.values():
+        months.setdefault(fname, {})[it["id"]] = it
+
+    added = changed = 0
+    seen = set()
+    for it in new_items:
+        if it["id"] in seen:
+            continue
+        seen.add(it["id"])
+        if it["id"] in existing:
+            fname, old = existing[it["id"]]
+            # 의안 상태 변화: 단계가 바뀌면 내용 갱신 + 오늘 수집분으로 다시 올림
+            if it["cat"] == "bill" and old.get("stage") != it["stage"]:
+                it["stageChanged"] = True
+                months[fname].pop(it["id"], None)
+                months.setdefault(month_file, {})[it["id"]] = it
+                changed += 1
+            continue
+        months.setdefault(month_file, {})[it["id"]] = it
+        added += 1
+
+    # 뉴스 보관기간 정리
+    cutoff = (TODAY - datetime.timedelta(days=CFG["news_keep_days"])).isoformat()
+    for fname in list(months):
+        months[fname] = {k: v for k, v in months[fname].items()
+                         if not (v["cat"] == "news" and v["collected"] < cutoff)}
+        path = os.path.join(DATA, fname)
+        rows = sorted(months[fname].values(), key=lambda x: (x["collected"], x["date"]), reverse=True)
+        json.dump(rows, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
+    return added, changed, sorted(months, reverse=True)
+
+
+def main():
+    existing = load_existing()
+    prev_stages = {i["id"][5:]: i["stage"] for _, i in existing.values() if i["cat"] == "bill"}
+    results, status = [], {}
+
+    jobs = [
+        ("의안", ["ASSEMBLY_KEY"], lambda: collect_bills(ENV("ASSEMBLY_KEY"), prev_stages)),
+        ("법령", ["LAW_OC"], lambda: collect_laws(ENV("LAW_OC"))),
+        ("판례", ["LAW_OC"], lambda: collect_cases(ENV("LAW_OC"))),
+        ("뉴스", ["NAVER_ID", "NAVER_SECRET"], lambda: collect_news(ENV("NAVER_ID"), ENV("NAVER_SECRET"))),
+    ]
+    for name, keys, fn in jobs:
+        if not all(ENV(k) for k in keys):
+            status[name] = "키 미등록"
+            continue
+        try:
+            got = fn()
+            results += got
+            status[name] = f"정상 {len({g['id'] for g in got})}건"
+        except Exception as e:  # 한 출처 실패가 전체를 멈추지 않게
+            msg = str(e)
+            if "403" in msg:
+                msg = "403 접근 거부 (IP 미등록일 수 있음)"
+            status[name] = "실패: " + msg[:120]
+            print(f"[{name}] {msg}", file=sys.stderr)
+
+    added, changed, months = save(results, existing)
+    total = sum(len(json.load(open(os.path.join(DATA, m), encoding="utf-8"))) for m in months)
+    index = {"lastRun": NOW.strftime("%Y-%m-%d %H:%M"), "today": TODAY.isoformat(),
+             # 첫 수집 날은 기존 자료가 한꺼번에 들어오므로 보드에서 NEW 표시를 끈다
+             "firstRun": len(existing) == 0,
+             "months": months, "total": total, "added": added, "stageChanged": changed,
+             "status": status}
+    json.dump(index, open(os.path.join(DATA, "index.json"), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    print(json.dumps(index, ensure_ascii=False, indent=1))
+
+
+if __name__ == "__main__":
+    main()

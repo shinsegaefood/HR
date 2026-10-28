@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>인사이슈 보드</title>
+<style>
+:root{
+  --ink:#1c2033;--muted:#5b6075;--line:#e3e5ee;--line2:#d5d8e4;--bg:#f4f5f9;--card:#fff;
+  --brand:#3730a3;--brand-bg:#e7e9fb;
+  --act:#9b1c1c;--act-bg:#fff1f0;--act-line:#f6c7c2;--act-dot:#c2281b;
+  --watch:#7a4a00;--watch-bg:#fff8e6;--watch-line:#f1d58a;--watch-dot:#d08a00;--dday:#fde9b4;
+  --ref-dot:#8a8fa3;--ok:#1d6b43;--ok-bg:#e3f5ea;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;line-height:1.5}
+a{color:var(--brand)}a:hover{color:#1e1b4b}
+button,input,select{font-family:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+header{background:#fff;border-bottom:1px solid var(--line)}
+.hd{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:16px 0}
+.brand{display:flex;align-items:center;gap:12px;flex:1 1 280px}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.brand h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.3px}
+.brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.search{display:flex;gap:8px;flex:1 1 420px;justify-content:flex-end;flex-wrap:wrap}
+.sbox{position:relative;flex:1 1 240px;max-width:420px}
+.sbox svg{position:absolute;left:12px;top:14px}
+.sbox input{width:100%;height:44px;padding:0 14px 0 38px;border:1px solid var(--line2);border-radius:10px;font-size:14px;background:#f8f9fc}
+.sbox input:focus{outline:2px solid var(--brand);outline-offset:-1px;background:#fff}
+select,.btn{height:44px;padding:0 14px;border:1px solid var(--line2);border-radius:10px;background:#fff;font-size:14px;color:var(--ink);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--brand)}
+main.wrap{padding-top:24px;padding-bottom:48px}
+.alert{background:var(--watch-bg);border:1px solid var(--watch-line);color:var(--watch);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:16px}
+.alert.demo{background:var(--brand-bg);border-color:#c7cbf3;color:#2e2a8f}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.stat .l{font-size:13px;color:var(--muted);font-weight:500}
+.stat .v{font-size:34px;font-weight:800;letter-spacing:-1px;margin-top:4px}
+.stat .v small{font-size:15px;font-weight:500;margin-left:4px;color:inherit;opacity:.8}
+.stat.act{background:var(--act-bg);border-color:var(--act-line)}.stat.act .l,.stat.act .v{color:var(--act)}.stat.act .l{font-weight:700}
+.stat.watch{background:var(--watch-bg);border-color:var(--watch-line)}.stat.watch .l,.stat.watch .v{color:var(--watch)}.stat.watch .l{font-weight:700}
+.cols{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.left{flex:999 1 560px;min-width:0}
+.right{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tab{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:#fff;color:#3d4257;font-size:13.5px;cursor:pointer}
+.tab span{opacity:.7;margin-left:3px}
+.tab.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.group{margin-bottom:18px}
+.ghd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dot{width:10px;height:10px;border-radius:50%}
+.ghd h2{margin:0;font-size:15px;font-weight:800}
+.ghd .n{font-size:13px;color:var(--muted)}
+.ghd .tg{margin-left:auto;height:32px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:#fff;font-size:13px;color:var(--brand);cursor:pointer}
+.list{display:flex;flex-direction:column;gap:8px}
+.it{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.it.act{border-color:var(--act-line)}
+.pill{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;font-weight:800;border-radius:6px;padding:4px 8px}
+.c-news{color:#1e4fa8;background:#e4edfb}.c-law{color:#1d6b43;background:#e3f5ea}.c-case{color:#6b2fa3;background:#f1e7fb}
+.c-bill{color:#a34a0f;background:#fdeadb}.c-notice{color:#0d6670;background:#dff3f5}
+.body{flex:1 1 auto;min-width:0}
+.ttl{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ttl a{font-size:15px;font-weight:700;color:var(--ink);text-decoration:none}
+.ttl a:hover{text-decoration:underline;color:var(--brand)}
+.b{font-size:11px;font-weight:800;border-radius:6px;padding:1px 6px}
+.b-new{color:#fff;background:var(--brand)}.b-dd{color:var(--watch);background:var(--dday)}.b-st{color:#a34a0f;background:#fdeadb}
+.meta{font-size:12.5px;color:var(--muted);margin-top:4px}
+.tool{margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--act);background:var(--act-bg);border:1px solid var(--act-line);border-radius:8px;padding:4px 10px}
+mark{background:#fff2a8;color:inherit;padding:0 1px;border-radius:2px}
+.empty{font-size:13px;color:var(--muted);padding:14px;background:#fff;border:1px dashed var(--line2);border-radius:12px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+.phd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.phd h2{margin:0;font-size:15px;font-weight:800}
+.dd{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.dd:last-child{margin-bottom:0}
+.dd .d{flex:0 0 60px;text-align:center;font-size:13px;font-weight:800;border-radius:8px;padding:6px 0;color:#3d4257;background:#eceef5}
+.dd .d.soon{color:var(--watch);background:var(--dday)}
+.dd .t{font-size:13.5px;font-weight:700}.dd .s{font-size:12px;color:var(--muted)}
+.kws{display:flex;flex-wrap:wrap;gap:6px}
+.kw{font-size:13px;padding:6px 10px;border-radius:999px;background:#f1f2f6;color:#3d4257;border:0;cursor:pointer}
+.kw.hit{background:var(--brand-bg);color:#2e2a8f;font-weight:700}
+.trow{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;margin-bottom:8px}
+.trow:last-child{margin-bottom:0}
+.st{font-size:12px;font-weight:800;border-radius:6px;padding:2px 8px}
+.st-bad{color:var(--act);background:var(--act-bg)}.st-mid{color:var(--watch);background:var(--dday)}.st-ok{color:var(--ok);background:var(--ok-bg);font-weight:700}
+.srch-hd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.srch-hd h2{margin:0;font-size:15px;font-weight:800}
+.srch-hd .sp{flex:1}
+.foot{font-size:12px;color:var(--muted);line-height:1.6;padding:0 4px}
+.hidden{display:none!important}
+@media(max-width:720px){
+  .wrap{padding:0 16px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat{padding:12px 14px}.stat .v{font-size:26px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto}
+  .tab{flex:0 0 auto}
+  .it{flex-direction:column;gap:6px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap hd">
+    <div class="brand">
+      <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M18 8h2v10a2 2 0 0 1-2 2"/><path d="M8 8h6M8 12h6M8 16h4"/></svg></div>
+      <div><h1>인사이슈 보드</h1><div class="sub" id="lastrun">불러오는 중…</div></div>
+    </div>
+    <form class="search" id="sform" role="search">
+      <div class="sbox">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6075" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="q" aria-label="쌓인 자료 검색" placeholder="쌓인 자료 검색 (예: 통상임금, 육아휴직)">
+      </div>
+      <label class="hidden" for="period">기간</label>
+      <select id="period" aria-label="검색 기간">
+        <option value="3">최근 3개월</option><option value="12">최근 1년</option><option value="0">전체</option>
+      </select>
+      <a class="btn" id="lawlink" href="https://www.law.go.kr/" target="_blank" rel="noopener">법제처에서 찾기</a>
+    </form>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="alerts"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="l">오늘 신규</div><div class="v" id="s-new">0<small>건</small></div></div>
+    <div class="stat act"><div class="l">대응 필요</div><div class="v" id="s-act">0<small>건</small></div></div>
+    <div class="stat watch"><div class="l">시행 30일 이내</div><div class="v" id="s-soon">0<small>건</small></div></div>
+    <div class="stat"><div class="l">의안 상태 변화</div><div class="v" id="s-bill">0<small>건</small></div></div>
+  </div>
+
+  <div class="cols">
+    <section class="left">
+      <nav class="tabs" id="tabs" aria-label="종류별 보기"></nav>
+      <div id="board"></div>
+      <div id="results" class="hidden"></div>
+    </section>
+
+    <aside class="right">
+      <div class="panel">
+        <div class="phd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3730a3" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><h2>다가오는 시행일</h2></div>
+        <div id="ddays"></div>
+      </div>
+      <div class="panel">
+        <div class="phd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3730a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><h2>관심 키워드 (최근 7일)</h2></div>
+        <div class="kws" id="kws"></div>
+      </div>
+      <div class="panel">
+        <div class="phd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3730a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><h2>내 도구 점검 현황</h2></div>
+        <div id="tools"></div>
+      </div>
+      <div class="foot">매일 오전 7시에 법제처·국회·네이버 뉴스에서 자동으로 모아요. 뉴스는 제목과 짧은 요약만 저장하고, 원문은 각 언론사 링크로 이어집니다.</div>
+    </aside>
+  </div>
+</main>
+
+<script>
+const CATS={news:'뉴스',law:'법령',case:'판례',bill:'의안',notice:'입법예고'};
+const TABS=[['all','전체'],['news','뉴스'],['law','법령'],['case','판례'],['bill','의안'],['notice','입법예고']];
+let IDX=null, CFG=null, ITEMS=[], LOADED=new Set(), TAB='all', SHOW_REF=false, TODAY='';
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const days=(a,b)=>Math.round((Date.parse(a)-Date.parse(b))/864e5);   // a - b (일)
+const md=d=>d?`${+d.slice(5,7)}월 ${+d.slice(8,10)}일`:'';
+const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
+
+// ── 중요도: 날짜가 지나면 바뀌므로 보드에서 매번 계산 ──
+function priority(it){
+  if(it.cat==='law'){
+    const eff=it.effDate?days(it.effDate,TODAY):null;
+    const age=it.date?days(TODAY,it.date):999;
+    if(eff!==null&&eff>=0&&eff<=30) return 'act';
+    if(it.tool&&age<=60) return 'act';
+    if(age<=60||(eff!==null&&eff>30)) return 'watch';
+    return 'ref';
+  }
+  if(it.cat==='bill'||it.cat==='notice'){
+    if(it.stageChanged&&days(TODAY,it.collected)<=7) return 'watch';
+    return days(TODAY,it.date||it.collected)<=90?'watch':'ref';
+  }
+  return 'ref';
+}
+const isNew=it=>!IDX.firstRun&&it.collected===IDX.today;
+const recent=it=>days(TODAY,it.collected)<=7;
+
+// ── 데이터 불러오기 ──
+async function getJSON(p){const r=await fetch(p,{cache:'no-store'});if(!r.ok)throw new Error(p+' '+r.status);return r.json();}
+async function loadMonths(n){   // n=0이면 전체
+  const want=n?IDX.months.slice(0,n):IDX.months;
+  for(const m of want){ if(LOADED.has(m))continue;
+    try{ (await getJSON('data/'+m)).forEach(x=>ITEMS.push(x)); LOADED.add(m);}catch(e){console.warn(e);} }
+}
+async function init(){
+  try{
+    [IDX,CFG]=await Promise.all([getJSON('data/index.json'),getJSON('config/settings.json')]);
+    TODAY=kstToday();
+    await loadMonths(3);
+  }catch(e){ demo(); }
+  renderHeader(); renderAll();
+}
+function kstToday(){const d=new Date(Date.now()+9*36e5);return d.toISOString().slice(0,10);}
+
+function renderHeader(){
+  $('lastrun').textContent=IDX.demo?'예시 데이터 표시 중':`${md(IDX.today)} ${IDX.lastRun.slice(11)} 자동수집 · 누적 ${IDX.total.toLocaleString()}건`;
+  const al=[];
+  if(IDX.demo) al.push('<div class="alert demo">아직 수집된 자료가 없어 예시 데이터를 보여주고 있어요. 첫 자동수집이 끝나면 실제 자료로 바뀝니다.</div>');
+  const bad=Object.entries(IDX.status||{}).filter(([k,v])=>!/^정상/.test(v));
+  if(bad.length) al.push(`<div class="alert">수집 확인 필요 — ${bad.map(([k,v])=>`<b>${esc(k)}</b>: ${esc(v)}`).join(' · ')}</div>`);
+  if(days(TODAY,IDX.today)>=2&&!IDX.demo) al.push(`<div class="alert">마지막 수집이 ${md(IDX.today)}이에요. 자동수집이 멈췄는지 확인해 주세요.</div>`);
+  $('alerts').innerHTML=al.join('');
+}
+
+// ── 메인 보드 ──
+function boardItems(){ return ITEMS.filter(it=>priority(it)==='act'||recent(it)); }
+function renderAll(){
+  const bi=boardItems();
+  $('s-new').innerHTML=ITEMS.filter(isNew).length+'<small>건</small>';
+  $('s-act').innerHTML=bi.filter(i=>priority(i)==='act').length+'<small>건</small>';
+  $('s-soon').innerHTML=soonLaws(30).length+'<small>건</small>';
+  $('s-bill').innerHTML=ITEMS.filter(i=>i.cat==='bill'&&i.stageChanged&&recent(i)).length+'<small>건</small>';
+  renderTabs(bi); renderSide();
+  if(searching()) runSearch(); else renderBoard(bi);
+}
+function renderTabs(src){
+  $('tabs').innerHTML=TABS.map(([k,l])=>{
+    const n=src.filter(i=>k==='all'||i.cat===k).length;
+    return `<button type="button" class="tab${k===TAB?' on':''}" data-tab="${k}">${l}<span>${n}</span></button>`;}).join('');
+}
+function card(it,q){
+  const p=priority(it);
+  const hl=s=>{let h=esc(s); if(q) q.split(/\s+/).filter(Boolean).forEach(w=>{h=h.split(esc(w)).join('<mark>'+esc(w)+'</mark>');}); return h;};
+  const eff=it.effDate?days(it.effDate,TODAY):null;
+  const badges=[];
+  if(isNew(it)) badges.push('<span class="b b-new">NEW</span>');
+  if(eff!==null&&eff>=0&&eff<=90) badges.push(`<span class="b b-dd">D-${eff}</span>`);
+  if(it.cat==='bill'&&it.stage) badges.push(`<span class="b b-st">${esc(it.stage)}${it.stageChanged&&recent(it)?' · 변경':''}</span>`);
+  const meta=[it.source, it.date&&(it.cat==='case'?'선고 ':it.cat==='bill'?'발의 ':it.cat==='law'?'공포 ':'')+md(it.date),
+              it.effDate&&('시행 '+md(it.effDate)), it.summary].filter(Boolean).map(esc).join(' · ');
+  return `<article class="it${p==='act'?' act':''}">
+    <span class="pill c-${it.cat}">${CATS[it.cat]||''}</span>
+    <div class="body">
+      <div class="ttl"><a href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">${hl(it.title)}</a>${badges.join('')}</div>
+      <div class="meta">${meta}</div>
+      ${it.tool&&it.cat==='law'?`<div class="tool">${esc(it.tool)} 규칙 점검 필요</div>`:''}
+    </div></article>`;
+}
+function renderBoard(bi){
+  $('results').classList.add('hidden'); $('board').classList.remove('hidden');
+  const v=bi.filter(i=>TAB==='all'||i.cat===TAB).sort((a,b)=>(b.collected+b.date).localeCompare(a.collected+a.date));
+  const G=[['act','대응 필요','var(--act-dot)'],['watch','주시','var(--watch-dot)'],['ref','참고','var(--ref-dot)']];
+  $('board').innerHTML=G.map(([k,l,c])=>{
+    const its=v.filter(i=>priority(i)===k);
+    const isRef=k==='ref', show=!isRef||SHOW_REF;
+    return `<div class="group"><div class="ghd"><span class="dot" style="background:${c}"></span><h2>${l}</h2><span class="n">${its.length}건</span>
+      ${isRef&&its.length?`<button type="button" class="tg" id="tgref">${SHOW_REF?'접기':'펼치기'}</button>`:''}</div>
+      ${show?`<div class="list">${its.length?its.map(i=>card(i)).join(''):'<div class="empty">해당 항목이 없어요.</div>'}</div>`:''}</div>`;
+  }).join('')+`<div class="foot">최근 7일 수집분과 대응이 필요한 항목만 보여요. 이전 자료는 위 검색창에서 찾을 수 있어요.</div>`;
+}
+
+// ── 오른쪽 칸 ──
+function soonLaws(n){
+  const seen=new Set();
+  return ITEMS.filter(i=>i.cat==='law'&&i.effDate&&days(i.effDate,TODAY)>=0&&days(i.effDate,TODAY)<=n)
+    .filter(i=>{const k=i.title+i.effDate; if(seen.has(k))return false; seen.add(k); return true;})
+    .sort((a,b)=>a.effDate.localeCompare(b.effDate));
+}
+function renderSide(){
+  const up=soonLaws(120).slice(0,6);
+  $('ddays').innerHTML=up.length?up.map(i=>{const d=days(i.effDate,TODAY);
+    return `<div class="dd"><span class="d${d<=30?' soon':''}">D-${d}</span><div><div class="t">${esc(i.title)}</div><div class="s">${md(i.effDate)} 시행</div></div></div>`;}).join('')
+    :'<div class="s" style="font-size:13px;color:var(--muted)">120일 안에 시행되는 법령이 없어요.</div>';
+  const rec=ITEMS.filter(recent);
+  $('kws').innerHTML=(CFG.keywords||[]).map(k=>{const n=rec.filter(i=>(i.title+' '+i.summary).includes(k)).length;
+    return `<button type="button" class="kw${n?' hit':''}" data-kw="${esc(k)}">${esc(k)} ${n}</button>`;}).join('');
+  $('tools').innerHTML=(CFG.tools||[]).map(t=>{
+    const hit=ITEMS.filter(i=>i.cat==='law'&&i.tool&&i.tool.includes(t.name));
+    const now=hit.some(i=>priority(i)==='act');
+    const later=hit.some(i=>i.effDate&&days(i.effDate,TODAY)>30);
+    const [c,l]=now?['st-bad','점검 필요']:later?['st-mid','시행 예정']:['st-ok','이상 없음'];
+    return `<div class="trow"><span>${esc(t.name)}</span><span class="st ${c}">${l}</span></div>`;}).join('');
+}
+
+// ── 검색 ──
+const searching=()=>$('q').value.trim()!=='';
+async function runSearch(){
+  const q=$('q').value.trim(); const n=+$('period').value;
+  $('lawlink').href='https://www.law.go.kr/LSW/totalSearch.do?query='+encodeURIComponent(q);
+  if(!q){renderAll();return;}
+  if(!IDX.demo) await loadMonths(n);
+  const from=n?new Date(Date.now()+9*36e5-n*30*864e5).toISOString().slice(0,10):'0000';
+  const words=q.split(/\s+/).filter(Boolean);
+  const hit=ITEMS.filter(i=>(i.collected>=from||i.date>=from)&&(TAB==='all'||i.cat===TAB)
+      &&words.every(w=>(i.title+' '+i.summary+' '+i.source+' '+(i.stage||'')).includes(w)))
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  window._HIT=hit;
+  renderTabs(ITEMS.filter(i=>words.every(w=>(i.title+' '+i.summary).includes(w))));
+  $('board').classList.add('hidden'); $('results').classList.remove('hidden');
+  $('results').innerHTML=`<div class="srch-hd"><h2>"${esc(q)}" 검색 결과 ${hit.length}건</h2><span class="sp"></span>
+      <button type="button" class="btn" id="csv">엑셀로 내려받기</button><button type="button" class="btn" id="clr">보드로 돌아가기</button></div>
+    <div class="list">${hit.length?hit.slice(0,300).map(i=>card(i,q)).join(''):'<div class="empty">쌓인 자료에 없어요. 오른쪽 위 "법제처에서 찾기"로 원문 검색을 해보세요.</div>'}</div>
+    ${hit.length>300?'<div class="foot" style="margin-top:8px">앞의 300건만 보여요. 전체는 엑셀로 내려받으세요.</div>':''}`;
+}
+function downloadCSV(){
+  const rows=[['종류','제목','출처','날짜','시행일','처리단계','요약','링크','수집일']]
+    .concat((window._HIT||[]).map(i=>[CATS[i.cat],i.title,i.source,i.date,i.effDate,i.stage,i.summary,i.url,i.collected]));
+  const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`인사이슈_${$('q').value.trim()}_${TODAY}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ── 이벤트 ──
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]'); if(t){TAB=t.dataset.tab; searching()?runSearch():renderAll(); return;}
+  if(e.target.closest('#tgref')){SHOW_REF=!SHOW_REF; renderAll(); return;}
+  const k=e.target.closest('[data-kw]'); if(k){$('q').value=k.dataset.kw; runSearch(); return;}
+  if(e.target.closest('#csv')){downloadCSV(); return;}
+  if(e.target.closest('#clr')){$('q').value=''; $('lawlink').href='https://www.law.go.kr/'; renderAll(); return;}
+});
+$('sform').addEventListener('submit',e=>{e.preventDefault(); runSearch();});
+$('period').addEventListener('change',()=>{ if(searching()) runSearch(); });
+let tmr; $('q').addEventListener('input',()=>{clearTimeout(tmr); tmr=setTimeout(()=>searching()?runSearch():renderAll(),300);});
+
+// ── 예시 데이터 (수집 전 화면 확인용) ──
+function demo(){
+  TODAY=kstToday();
+  const add=n=>{const d=new Date(Date.parse(TODAY)+n*864e5);return d.toISOString().slice(0,10);};
+  IDX={demo:true,today:TODAY,lastRun:TODAY+' 07:00',total:8,months:[],firstRun:false,status:{}};
+  CFG=CFG||{keywords:['육아휴직','통상임금','4대보험','퇴직금','최저임금'],
+    tools:[{name:'휴직급여검증'},{name:'4대보험 차액'},{name:'퇴직금 계산기'},{name:'연차수당 계산기'}]};
+  const T=TODAY;
+  ITEMS=[
+    {id:'d1',cat:'law',title:'[예시] 고용보험법 시행령 일부개정 — 육아휴직',date:add(-1),effDate:add(7),source:'고용노동부',url:'https://www.law.go.kr/',summary:'',stage:'',tool:'휴직급여검증, 4대보험 차액',collected:T},
+    {id:'d2',cat:'law',title:'[예시] 국민건강보험법 시행령 일부개정',date:add(-1),effDate:add(65),source:'보건복지부',url:'https://www.law.go.kr/',summary:'',stage:'',tool:'4대보험 차액',collected:T},
+    {id:'d3',cat:'bill',title:'[예시] 근로기준법 일부개정법률안',date:add(-20),source:'○○○의원 등 10인',url:'https://likms.assembly.go.kr/',summary:'소관: 환경노동위원회',stage:'위원회 의결(원안가결)',stageChanged:true,tool:'',collected:T},
+    {id:'d4',cat:'bill',title:'[예시] 남녀고용평등과 일·가정 양립 지원에 관한 법률 일부개정법률안',date:add(-2),source:'○○○의원 등 12인',url:'https://likms.assembly.go.kr/',summary:'소관: 환경노동위원회',stage:'위원회 심사',tool:'',collected:T},
+    {id:'d5',cat:'case',title:'[예시] 임금 청구 사건 (통상임금)',date:add(-4),source:'대법원',url:'https://www.law.go.kr/',summary:'검색어: 통상임금',stage:'',tool:'',collected:T},
+    {id:'d6',cat:'news',title:'[예시] 고용노동부, 직장 내 괴롭힘 판단 지침 개정',date:add(-1),source:'example.com',url:'https://www.moel.go.kr/',summary:'',stage:'',tool:'',collected:T},
+    {id:'d7',cat:'news',title:'[예시] 육아휴직 사용률 관련 보도',date:add(-2),source:'example.com',url:'https://news.naver.com/',summary:'',stage:'',tool:'',collected:add(-2)},
+    {id:'d8',cat:'law',title:'[예시] 최저임금 고시',date:add(-80),effDate:add(65),source:'고용노동부',url:'https://www.law.go.kr/',summary:'',stage:'',tool:'',collected:add(-3)}
+  ];
+}
+
+init();
+</script>
+</body>
+</html>
