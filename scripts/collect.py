@@ -16,6 +16,7 @@ TODAY = NOW.date()
 
 CFG = json.load(open(os.path.join(ROOT, "config", "settings.json"), encoding="utf-8"))
 ENV = os.environ.get
+NOTES = {}   # 출처별 부가 안내 (예: 개정이유 일부 실패)
 
 
 # ───────────────────────── 공통 ─────────────────────────
@@ -119,7 +120,50 @@ def law_search(oc, target, query, extra=None):
     return rows if isinstance(rows, list) else [rows]
 
 
-def collect_laws(oc):
+def _strings(o):
+    """중첩된 dict/list 안의 문자열을 순서대로 모두 꺼낸다"""
+    if isinstance(o, str):
+        yield o
+    elif isinstance(o, dict):
+        for v in o.values():
+            yield from _strings(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _strings(v)
+
+
+def _find_key(o, words):
+    """키 이름에 words 중 하나가 들어간 첫 값을 찾는다 (응답 구조가 조금 달라도 동작하게)"""
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if any(w in k for w in words) and not k.endswith("여부"):
+                return v
+        for v in o.values():
+            r = _find_key(v, words)
+            if r is not None:
+                return r
+    elif isinstance(o, list):
+        for v in o:
+            r = _find_key(v, words)
+            if r is not None:
+                return r
+    return None
+
+
+def law_reason(oc, mst):
+    """법령 본문에서 '제·개정이유 및 주요내용'을 꺼낸다 (현행법령 본문 JSON 권한 필요)"""
+    q = urllib.parse.urlencode({"OC": oc, "target": "law", "MST": mst, "type": "JSON"})
+    js = http_json(f"https://www.law.go.kr/DRF/lawService.do?{q}", timeout=40)
+    part = _find_key(js, ["제개정이유", "개정이유"]) or _find_key(js, ["개정문"])
+    if part is None:
+        return ""
+    lines = [clean(s) for s in _strings(part)]
+    text = "\n".join(s for s in lines if s)
+    return text[:4000]
+
+
+def collect_laws(oc, existing=None):
+    existing = existing or {}
     out = []
     for name in CFG["laws"]:
         for r in law_search(oc, "law", name, {"sort": "ddes"}):
@@ -134,7 +178,24 @@ def collect_laws(oc):
                 source=clean(r.get("소관부처명")) or "법제처",
                 # 공개 링크만 저장 (OC가 들어간 API 링크는 저장하지 않음)
                 url="https://www.law.go.kr/법령/" + urllib.parse.quote(title),
+                mst=str(seq),
                 summary=f"공포번호 {clean(r.get('공포번호'))}" if r.get("공포번호") else ""))
+
+    # 개정이유: 이미 받아둔 건 다시 받지 않음. 본문 권한이 없거나 실패해도 목록 수집은 유지
+    reason_fail = 0
+    for it in out:
+        old = existing.get(it["id"], (None, {}))[1]
+        if old.get("reason"):
+            it["reason"] = old["reason"]
+            continue
+        try:
+            it["reason"] = law_reason(oc, it["mst"])
+        except Exception as e:
+            reason_fail += 1
+            print(f"[개정이유] {it['title']}: {e}", file=sys.stderr)
+    if reason_fail:
+        print(f"[개정이유] {reason_fail}건 실패", file=sys.stderr)
+    NOTES["법령"] = f"개정이유 {reason_fail}건 실패" if reason_fail else ""
     return out
 
 
@@ -150,7 +211,7 @@ def collect_cases(oc):
                 title=f"{clean(r.get('사건명'))} ({clean(r.get('사건번호'))})",
                 date=ymd(r.get("선고일자")), source=clean(r.get("법원명")) or "법원",
                 url=f"https://www.law.go.kr/precInfoP.do?precSeq={seq}",
-                summary=f"검색어: {kw}"))
+                topic=kw, summary=f"검색어: {kw}"))
     return out
 
 
@@ -214,6 +275,10 @@ def save(new_items, existing):
         seen.add(it["id"])
         if it["id"] in existing:
             fname, old = existing[it["id"]]
+            # 기존 항목에 없던 정보(개정이유 등)가 새로 생겼으면 채워 넣기
+            for k in ("reason", "mst", "topic"):
+                if it.get(k) and not old.get(k):
+                    months[fname][it["id"]][k] = it[k]
             # 의안 상태 변화: 단계가 바뀌면 내용 갱신 + 오늘 수집분으로 다시 올림
             if it["cat"] == "bill" and old.get("stage") != it["stage"]:
                 it["stageChanged"] = True
@@ -247,7 +312,7 @@ def main():
 
     jobs = [
         ("의안", ["ASSEMBLY_KEY"], lambda: collect_bills(ENV("ASSEMBLY_KEY"), prev_stages)),
-        ("법령", ["LAW_OC"], lambda: collect_laws(ENV("LAW_OC"))),
+        ("법령", ["LAW_OC"], lambda: collect_laws(ENV("LAW_OC"), existing)),
         ("판례", ["LAW_OC"], lambda: collect_cases(ENV("LAW_OC"))),
         ("뉴스", ["NAVER_ID", "NAVER_SECRET"], lambda: collect_news(ENV("NAVER_ID"), ENV("NAVER_SECRET"))),
     ]
@@ -259,6 +324,8 @@ def main():
             got = fn()
             results += got
             status[name] = f"정상 {len({g['id'] for g in got})}건"
+            if NOTES.get(name):
+                status[name] += f" · {NOTES[name]}"
         except Exception as e:  # 한 출처 실패가 전체를 멈추지 않게
             msg = str(e)
             if "403" in msg:
