@@ -72,6 +72,17 @@ main.wrap{padding-top:24px;padding-bottom:48px}
 .topic{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:#fff;font-size:13px;color:#3d4257;cursor:pointer}
 .topic.on{background:var(--brand-bg);border-color:#c7cbf3;color:#2e2a8f;font-weight:700}
 .morebtn{width:100%;justify-content:center;margin-top:10px}
+.stfilter{margin-bottom:8px}
+.sec{margin:18px 0 8px;font-size:14px;font-weight:800;color:var(--ink)}.sec span{font-weight:500;color:var(--muted);font-size:13px;margin-left:4px}
+.older{display:flex;flex-direction:column;gap:6px}
+.grp{background:#fff;border:1px solid var(--line);border-radius:10px}
+.grp summary{cursor:pointer;padding:12px 14px;font-size:14px;font-weight:700}.grp summary span{font-weight:500;color:var(--muted);margin-left:4px}
+.grp[open] summary{border-bottom:1px solid var(--line)}
+.row{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:8px 14px;border-top:1px solid #f0f1f5;font-size:13px}
+.row:first-of-type{border-top:0}
+.row .rd{flex:0 0 64px;color:var(--muted);font-variant-numeric:tabular-nums}
+.row a{flex:1 1 300px;min-width:0;color:var(--ink);text-decoration:none;font-weight:500}.row a:hover{color:var(--brand);text-decoration:underline}
+.row .rx{color:var(--muted);font-size:12px}
 .reason{margin-top:10px;background:#f7f8fb;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
 .reason summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
 .reason summary::-webkit-details-marker{display:none}
@@ -175,7 +186,7 @@ mark{background:#fff2a8;color:inherit;padding:0 1px;border-radius:2px}
 <script>
 const CATS={news:'뉴스',law:'법령',case:'판례',bill:'의안',notice:'입법예고'};
 const TABS=[['all','전체'],['news','뉴스'],['law','법령'],['case','판례'],['bill','의안'],['notice','입법예고']];
-let IDX=null, CFG=null, ITEMS=[], LOADED=new Set(), TAB='all', SHOW_REF=false, TODAY='', TOPIC='', PAGE=20;
+let IDX=null, CFG=null, ITEMS=[], LOADED=new Set(), TAB='all', SHOW_REF=false, TODAY='', TOPIC='', PAGE=20, STATUS='live';
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -276,7 +287,7 @@ function renderAll(){
 // 탭 건수: '전체'는 메인에 보이는 수, 종류 탭은 쌓인 전체 수
 function renderTabs(src){
   $('tabs').innerHTML=TABS.map(([k,l])=>{
-    const n=k==='all'?src.length:(searching()?src:ITEMS).filter(i=>i.cat===k).length;
+    const n=k==='all'?src.length:(searching()?src:ITEMS).filter(i=>i.cat===k&&(searching()||!(k==='bill'||k==='notice')||statusOf(i)==='live')).length;
     return `<button type="button" class="tab${k===TAB?' on':''}" data-tab="${k}">${l}<span>${n}</span></button>`;}).join('');
 }
 function card(it,q){
@@ -319,18 +330,50 @@ function topicOf(it){
   const t=it.title.replace(/\s/g,'');
   return kws.find(k=>t.includes(k.replace(/\s/g,'')))||'기타';
 }
+// 의안 상태: 진행 중 / 가결 / 폐기·철회
+function statusOf(it){const st=it.stage||''; return /폐기|철회|부결/.test(st)?'dead':/가결/.test(st)?'passed':'live';}
+const ST_LABEL={live:'진행 중',passed:'가결',dead:'폐기·철회'};
+function row(i){
+  const d=(i.date&&+i.date.slice(0,4)>=1950)?`${i.date.slice(2,4)}.${i.date.slice(5,7)}.${i.date.slice(8,10)}`:'-';
+  const extra=[i.source, i.cat==='bill'?i.stage:''].filter(Boolean).map(esc).join(' · ');
+  return `<div class="row"><span class="rd">${d}</span><a href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener">${esc(i.title)}</a><span class="rx">${extra}</span></div>`;
+}
 function renderBrowse(){
   $('results').classList.add('hidden'); $('board').classList.remove('hidden');
-  const all=ITEMS.filter(i=>i.cat===TAB).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  let all=ITEMS.filter(i=>i.cat===TAB).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  // 의안·입법예고: 상태 필터 (기본 = 진행 중)
+  const hasStatus=TAB==='bill'||TAB==='notice';
+  let stChips='';
+  if(hasStatus){
+    const sc={live:0,passed:0,dead:0}; all.forEach(i=>sc[statusOf(i)]++);
+    stChips=`<div class="topics stfilter">${['live','passed','dead'].map(k=>
+      `<button type="button" class="topic${STATUS===k?' on':''}" data-status="${k}">${ST_LABEL[k]} ${sc[k]}</button>`).join('')}</div>`;
+    all=all.filter(i=>statusOf(i)===STATUS);
+  }
   const cnt={}; all.forEach(i=>{const t=topicOf(i); cnt[t]=(cnt[t]||0)+1;});
   const topics=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
   if(TOPIC&&!cnt[TOPIC]) TOPIC='';
-  const list=groupNews(all.filter(i=>!TOPIC||topicOf(i)===TOPIC));
-  $('board').innerHTML=`<div class="srch-hd"><h2>${CATS[TAB]} 전체 ${all.length}건</h2><span class="sp"></span><span class="n" style="font-size:13px;color:var(--muted)">최신순</span></div>
+  const list=all.filter(i=>!TOPIC||topicOf(i)===TOPIC);
+
+  // 최근은 카드, 나머지는 접힌 한 줄 목록
+  let recentList, older, unit;
+  if(TAB==='law'){ recentList=list; older=[]; }
+  else if(TAB==='case'){ recentList=list.slice(0,10); older=list.slice(10); unit='year'; }
+  else { const lim=TAB==='news'?7:30;
+    recentList=list.filter(i=>days(TODAY,i.date||i.collected)<=lim); older=list.filter(i=>days(TODAY,i.date||i.collected)>lim); unit='month'; }
+  const recentLabel=TAB==='case'?'최근 선고':TAB==='news'?'최근 7일':TAB==='law'?'':'최근 30일';
+  const groups={}; older.forEach(i=>{const k=unit==='year'?(i.date||'').slice(0,4):(i.date||'').slice(0,7); (groups[k]=groups[k]||[]).push(i);});
+  const glabel=k=>(!k||+k.slice(0,4)<1950)?'날짜 미상':unit==='year'?`${k}년`:`${k.slice(0,4)}년 ${+k.slice(5,7)}월`;
+
+  $('board').innerHTML=`<div class="srch-hd"><h2>${CATS[TAB]}${hasStatus?' · '+ST_LABEL[STATUS]:''} ${all.length}건</h2><span class="sp"></span><span style="font-size:13px;color:var(--muted)">최신순</span></div>
+    ${stChips}
     <div class="topics"><button type="button" class="topic${TOPIC?'':' on'}" data-topic="">전체 ${all.length}</button>${topics.map(([t,n])=>
       `<button type="button" class="topic${t===TOPIC?' on':''}" data-topic="${esc(t)}">${esc(t)} ${n}</button>`).join('')}</div>
-    <div class="list">${list.length?list.slice(0,PAGE).map(i=>card(i)).join(''):'<div class="empty">아직 쌓인 자료가 없어요.</div>'}</div>
-    ${list.length>PAGE?`<button type="button" class="btn morebtn" id="more">더 보기 (${list.length-PAGE}건 남음)</button>`:''}`;
+    ${recentLabel?`<h3 class="sec">${recentLabel} <span>${recentList.length}건</span></h3>`:''}
+    <div class="list">${recentList.length?groupNews(recentList).map(i=>card(i)).join(''):'<div class="empty">이 기간에 해당 자료가 없어요.</div>'}</div>
+    ${older.length?`<h3 class="sec">이전 자료 <span>${older.length}건</span></h3>
+      <div class="older">${Object.keys(groups).sort().reverse().map(k=>
+        `<details class="grp"><summary>${glabel(k)} <span>${groups[k].length}건</span></summary>${groups[k].map(row).join('')}</details>`).join('')}</div>`:''}`;
 }
 function renderBoard(bi){
   $('results').classList.add('hidden'); $('board').classList.remove('hidden');
@@ -392,8 +435,9 @@ function downloadCSV(){
 
 // ── 이벤트 ──
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-tab]'); if(t){TAB=t.dataset.tab; TOPIC=''; PAGE=20; searching()?runSearch():renderAll(); return;}
+  const t=e.target.closest('[data-tab]'); if(t){TAB=t.dataset.tab; TOPIC=''; PAGE=20; STATUS='live'; searching()?runSearch():renderAll(); return;}
   const tp=e.target.closest('[data-topic]'); if(tp){TOPIC=tp.dataset.topic; PAGE=20; renderBrowse(); return;}
+  const sf=e.target.closest('[data-status]'); if(sf){STATUS=sf.dataset.status; TOPIC=''; renderBrowse(); return;}
   if(e.target.closest('#more')){PAGE+=20; renderBrowse(); return;}
   if(e.target.closest('#tgref')){SHOW_REF=!SHOW_REF; renderAll(); return;}
   const k=e.target.closest('[data-kw]'); if(k){$('q').value=k.dataset.kw; runSearch(); return;}
