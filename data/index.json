@@ -1,17 +1,18 @@
 {
- "lastRun": "2026-10-28 13:03",
+ "lastRun": "2026-10-28 13:21",
  "today": "2026-10-28",
- "firstRun": true,
+ "firstRun": false,
+ "backfillDate": "2026-10-28",
  "months": [
   "2026-10.json"
  ],
- "total": 739,
- "added": 739,
+ "total": 866,
+ "added": 236,
  "stageChanged": 0,
  "status": {
-  "의안": "정상 612건",
-  "법령": "실패: <urlopen error timed out>",
-  "판례": "실패: <urlopen error timed out>",
-  "뉴스": "정상 127건"
+  "의안": "정상 744건",
+  "법령": "정상 27건",
+  "판례": "정상 77건",
+  "뉴스": "정상 17건"
  }
 }
