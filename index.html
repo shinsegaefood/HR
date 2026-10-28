@@ -68,6 +68,10 @@ main.wrap{padding-top:24px;padding-bottom:48px}
 .b-new{color:#fff;background:var(--brand)}.b-dd{color:var(--watch);background:var(--dday)}.b-st{color:#a34a0f;background:#fdeadb}
 .meta{font-size:12.5px;color:var(--muted);margin-top:4px}
 .tool{margin-top:8px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--act);background:var(--act-bg);border:1px solid var(--act-line);border-radius:8px;padding:4px 10px}
+.dups{margin-top:8px;font-size:12.5px}
+.dups summary{cursor:pointer;color:var(--brand);font-weight:700;padding:4px 0}
+.dups a{display:block;color:var(--muted);text-decoration:none;padding:3px 0}
+.dups a:hover{color:var(--brand);text-decoration:underline}
 mark{background:#fff2a8;color:inherit;padding:0 1px;border-radius:2px}
 .empty{font-size:13px;color:var(--muted);padding:14px;background:#fff;border:1px dashed var(--line2);border-radius:12px}
 .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
@@ -144,7 +148,7 @@ mark{background:#fff2a8;color:inherit;padding:0 1px;border-radius:2px}
         <div id="ddays"></div>
       </div>
       <div class="panel">
-        <div class="phd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3730a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><h2>관심 키워드 (최근 7일)</h2></div>
+        <div class="phd"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3730a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><h2>관심 키워드 (메인 기준)</h2></div>
         <div class="kws" id="kws"></div>
       </div>
       <div class="panel">
@@ -178,13 +182,18 @@ function priority(it){
     return 'ref';
   }
   if(it.cat==='bill'||it.cat==='notice'){
-    if(it.stageChanged&&days(TODAY,it.collected)<=7) return 'watch';
-    return days(TODAY,it.date||it.collected)<=90?'watch':'ref';
+    const st=it.stage||'';
+    if(/폐기|철회|부결/.test(st)) return 'ref';                       // 끝난 법안
+    const changedAgo=it.stageChanged?days(TODAY,it.collected):999;
+    if(/가결/.test(st)&&changedAgo<=30) return 'act';                // 곧 공포·시행 → 준비
+    if(changedAgo<=7) return 'watch';                                // 최근 단계 변화
+    return days(TODAY,it.date||it.collected)<=30?'watch':'ref';      // 최근 30일 발의
   }
   return 'ref';
 }
-const isNew=it=>!IDX.firstRun&&it.collected===IDX.today;
-const recent=it=>days(TODAY,it.collected)<=7;
+const isNew=it=>!IDX.firstRun&&it.collected===IDX.today&&it.collected!==IDX.backfillDate;
+// 첫날 일괄 수집분은 '최근'으로 치지 않는다
+const recent=it=>days(TODAY,it.collected)<=7&&it.collected!==IDX.backfillDate;
 
 // ── 데이터 불러오기 ──
 async function getJSON(p){const r=await fetch(p,{cache:'no-store'});if(!r.ok)throw new Error(p+' '+r.status);return r.json();}
@@ -214,7 +223,31 @@ function renderHeader(){
 }
 
 // ── 메인 보드 ──
-function boardItems(){ return ITEMS.filter(it=>priority(it)==='act'||recent(it)); }
+// 메인 화면에 올릴 것: 대응 필요 전부 + 법령·의안은 '주시' 이상 + 뉴스·판례는 최근 7일분
+function boardItems(){
+  return ITEMS.filter(it=>{
+    const p=priority(it);
+    if(p==='act') return true;
+    if(it.cat==='law'||it.cat==='bill'||it.cat==='notice') return p==='watch';
+    if(it.cat==='news') return days(TODAY,it.date||it.collected)<=7;     // 기사 날짜 7일 이내
+    if(it.cat==='case') return days(TODAY,it.date||it.collected)<=30;    // 선고일 30일 이내
+    return recent(it);
+  });
+}
+// 비슷한 제목의 뉴스를 하나로 묶기 (글자 2개씩 쪼개 겹치는 비율로 판단)
+function bigrams(s){const t=s.replace(/[^가-힣A-Za-z0-9]/g,'');const b=new Set();for(let i=0;i<t.length-1;i++)b.add(t.slice(i,i+2));return b;}
+function similar(a,b){let n=0;a.forEach(x=>{if(b.has(x))n++;});return n/Math.min(a.size||1,b.size||1);}
+function groupNews(list){
+  const out=[], heads=[];
+  list.forEach(it=>{
+    if(it.cat!=='news'){out.push(it);return;}
+    const bg=bigrams(it.title);
+    const h=heads.find(x=>similar(x.bg,bg)>=0.5);
+    if(h){h.it._dups=(h.it._dups||[]).concat(it);return;}
+    const head=Object.assign({},it,{_dups:[]}); heads.push({it:head,bg}); out.push(head);
+  });
+  return out;
+}
 function renderAll(){
   const bi=boardItems();
   $('s-new').innerHTML=ITEMS.filter(isNew).length+'<small>건</small>';
@@ -245,11 +278,13 @@ function card(it,q){
       <div class="ttl"><a href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">${hl(it.title)}</a>${badges.join('')}</div>
       <div class="meta">${meta}</div>
       ${it.tool&&it.cat==='law'?`<div class="tool">${esc(it.tool)} 규칙 점검 필요</div>`:''}
+      ${it._dups&&it._dups.length?`<details class="dups"><summary>같은 소식 ${it._dups.length}건 더</summary>${it._dups.map(d=>
+        `<a href="${esc(safeUrl(d.url))}" target="_blank" rel="noopener">${esc(d.source)} — ${esc(d.title)}</a>`).join('')}</details>`:''}
     </div></article>`;
 }
 function renderBoard(bi){
   $('results').classList.add('hidden'); $('board').classList.remove('hidden');
-  const v=bi.filter(i=>TAB==='all'||i.cat===TAB).sort((a,b)=>(b.collected+b.date).localeCompare(a.collected+a.date));
+  const v=groupNews(bi.filter(i=>TAB==='all'||i.cat===TAB).sort((a,b)=>(b.collected+b.date).localeCompare(a.collected+a.date)));
   const G=[['act','대응 필요','var(--act-dot)'],['watch','주시','var(--watch-dot)'],['ref','참고','var(--ref-dot)']];
   $('board').innerHTML=G.map(([k,l,c])=>{
     const its=v.filter(i=>priority(i)===k);
@@ -257,7 +292,7 @@ function renderBoard(bi){
     return `<div class="group"><div class="ghd"><span class="dot" style="background:${c}"></span><h2>${l}</h2><span class="n">${its.length}건</span>
       ${isRef&&its.length?`<button type="button" class="tg" id="tgref">${SHOW_REF?'접기':'펼치기'}</button>`:''}</div>
       ${show?`<div class="list">${its.length?its.map(i=>card(i)).join(''):'<div class="empty">해당 항목이 없어요.</div>'}</div>`:''}</div>`;
-  }).join('')+`<div class="foot">최근 7일 수집분과 대응이 필요한 항목만 보여요. 이전 자료는 위 검색창에서 찾을 수 있어요.</div>`;
+  }).join('')+`<div class="foot">대응 필요 전부, 최근 30일 발의·단계가 바뀐 의안, 최근 60일 공포 법령, 최근 7일 뉴스·판례만 보여요. 나머지는 위 검색창에서 찾을 수 있어요.</div>`;
 }
 
 // ── 오른쪽 칸 ──
@@ -272,7 +307,7 @@ function renderSide(){
   $('ddays').innerHTML=up.length?up.map(i=>{const d=days(i.effDate,TODAY);
     return `<div class="dd"><span class="d${d<=30?' soon':''}">D-${d}</span><div><div class="t">${esc(i.title)}</div><div class="s">${md(i.effDate)} 시행</div></div></div>`;}).join('')
     :'<div class="s" style="font-size:13px;color:var(--muted)">120일 안에 시행되는 법령이 없어요.</div>';
-  const rec=ITEMS.filter(recent);
+  const rec=boardItems();   // 메인에 보이는 범위 기준으로 키워드 건수 집계
   $('kws').innerHTML=(CFG.keywords||[]).map(k=>{const n=rec.filter(i=>(i.title+' '+i.summary).includes(k)).length;
     return `<button type="button" class="kw${n?' hit':''}" data-kw="${esc(k)}">${esc(k)} ${n}</button>`;}).join('');
   $('tools').innerHTML=(CFG.tools||[]).map(t=>{
