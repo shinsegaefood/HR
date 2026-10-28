@@ -69,10 +69,11 @@ def bill_stage(r):
     return "발의"
 
 
-def collect_bills(key, prev_stages):
-    out = []
-    for kw in CFG["bill_keywords"]:
-        q = urllib.parse.urlencode({"KEY": key, "Type": "json", "pIndex": 1, "pSize": 100,
+def bill_rows(key, kw, max_pages=15):
+    """한 키워드의 의안을 페이지를 넘기며 전부 가져온다 (100건 제한 해제)"""
+    rows = []
+    for page in range(1, max_pages + 1):
+        q = urllib.parse.urlencode({"KEY": key, "Type": "json", "pIndex": page, "pSize": 100,
                                     "AGE": CFG["assembly_age"], "BILL_NAME": kw})
         js = http_json(f"{ASSEMBLY_URL}?{q}")
         block = js.get("nzmimeepazxkubdpn")
@@ -80,9 +81,18 @@ def collect_bills(key, prev_stages):
             res = js.get("RESULT", {})
             if res.get("CODE") not in (None, "INFO-200"):
                 raise RuntimeError(f"국회 API 오류: {res.get('CODE')} {res.get('MESSAGE')}")
-            continue
-        rows = block[1].get("row", []) if len(block) > 1 else []
-        for r in rows:
+            break
+        got = block[1].get("row", []) if len(block) > 1 else []
+        rows += got
+        if len(got) < 100:
+            break
+    return rows
+
+
+def collect_bills(key, prev_stages):
+    out = []
+    for kw in CFG["bill_keywords"]:
+        for r in bill_rows(key, kw):
             bid = r.get("BILL_ID") or r.get("BILL_NO")
             if not bid:
                 continue
@@ -145,6 +155,17 @@ def collect_cases(oc):
 
 
 # ───────────────────────── 네이버 뉴스 ─────────────────────────
+def news_ok(title, host):
+    """제목 기준 필터: 본문에만 검색어가 스친 기사는 버린다"""
+    t = title.replace(" ", "")
+    if any(w.replace(" ", "") in t for w in CFG.get("news_exclude", [])):
+        return False
+    if any(w.replace(" ", "") in t for w in CFG.get("news_title_keywords", [])):
+        return True
+    trusted = any(host.endswith(d) for d in CFG.get("news_trusted", []))
+    return trusted and any(w in t for w in CFG.get("news_trusted_keywords", []))
+
+
 def collect_news(cid, secret):
     out = []
     for q in CFG["news_queries"]:
@@ -158,6 +179,8 @@ def collect_news(cid, secret):
             except Exception:
                 d = TODAY.isoformat()
             host = urllib.parse.urlparse(link).netloc.replace("www.", "")
+            if not news_ok(clean(r.get("title")), host):
+                continue
             desc = clean(r.get("description"))
             out.append(item(
                 id=f"news:{link}", cat="news", title=clean(r.get("title")),
@@ -201,11 +224,12 @@ def save(new_items, existing):
         months.setdefault(month_file, {})[it["id"]] = it
         added += 1
 
-    # 뉴스 보관기간 정리
+    # 뉴스 정리: 보관기간 초과분 + 필터 기준에 안 맞는 기존 기사 (필터를 바꾸면 과거분도 같이 정리됨)
     cutoff = (TODAY - datetime.timedelta(days=CFG["news_keep_days"])).isoformat()
     for fname in list(months):
         months[fname] = {k: v for k, v in months[fname].items()
-                         if not (v["cat"] == "news" and v["collected"] < cutoff)}
+                         if not (v["cat"] == "news" and
+                                 (v["collected"] < cutoff or not news_ok(v["title"], v["source"])))}
         path = os.path.join(DATA, fname)
         rows = sorted(months[fname].values(), key=lambda x: (x["collected"], x["date"]), reverse=True)
         json.dump(rows, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
@@ -214,6 +238,10 @@ def save(new_items, existing):
 
 def main():
     existing = load_existing()
+    try:
+        old_idx = json.load(open(os.path.join(DATA, "index.json"), encoding="utf-8"))
+    except Exception:
+        old_idx = {}
     prev_stages = {i["id"][5:]: i["stage"] for _, i in existing.values() if i["cat"] == "bill"}
     results, status = [], {}
 
@@ -243,6 +271,10 @@ def main():
     index = {"lastRun": NOW.strftime("%Y-%m-%d %H:%M"), "today": TODAY.isoformat(),
              # 첫 수집 날은 기존 자료가 한꺼번에 들어오므로 보드에서 NEW 표시를 끈다
              "firstRun": len(existing) == 0,
+             # 첫 수집 날짜(일괄 수집분) — 이 날 들어온 자료는 메인 화면 '최근'에서 제외
+             "backfillDate": old_idx.get("backfillDate")
+                             or (old_idx.get("today") if old_idx.get("firstRun") else None)
+                             or (TODAY.isoformat() if len(existing) == 0 else None),
              "months": months, "total": total, "added": added, "stageChanged": changed,
              "status": status}
     json.dump(index, open(os.path.join(DATA, "index.json"), "w", encoding="utf-8"),
