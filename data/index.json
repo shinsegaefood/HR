@@ -1,18 +1,18 @@
 {
- "lastRun": "2026-10-29 14:14",
+ "lastRun": "2026-10-29 14:18",
  "today": "2026-10-29",
  "firstRun": false,
  "backfillDate": "2026-10-28",
  "months": [
   "2026-10.json"
  ],
- "total": 1388,
- "added": 14,
+ "total": 1391,
+ "added": 3,
  "stageChanged": 0,
  "status": {
   "의안": "정상 745건",
-  "법령": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "판례": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "뉴스": "정상 24건"
+  "법령": "실패: <urlopen error timed out>",
+  "판례": "실패: <urlopen error timed out>",
+  "뉴스": "정상 25건"
  }
 }

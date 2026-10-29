@@ -546,6 +546,48 @@
 "collected": "2026-10-29"
 },
 {
+"id": "news:https://www.newsis.com/view/NISX20261029_0003846604",
+"cat": "news",
+"title": "신한은행, 연말 세액공제 시즌 '퇴직연금 ETF' 이벤트",
+"date": "2026-10-29",
+"source": "newsis.com",
+"url": "https://www.newsis.com/view/NISX20261029_0003846604",
+"summary": "신한은행은 연말 세액공제 시즌을 맞아 퇴직연금 상장지수펀드(ETF) 투자 고객을 대상으로 이벤트를 실시한다고 29일 밝혔다. 이번 이벤트는 다음 달 27일까지 확…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-10-29"
+},
+{
+"id": "news:http://datanews.co.kr/news/article.html?no=147220",
+"cat": "news",
+"title": "IBK기업은행, 퇴직연금 자동모으기 서비스 출시",
+"date": "2026-10-29",
+"source": "datanews.co.kr",
+"url": "http://datanews.co.kr/news/article.html?no=147220",
+"summary": "IBK기업은행(은행장 장민영)은 월 1만 원부터 퇴직연금에 정기적으로 투자할 수 있는 ‘퇴직연금 자동모으기' 서비스를 출시한다고 29일 밝혔다. 고객이 i-ONE…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-10-29"
+},
+{
+"id": "news:https://www.sidae.com/article/2026102910491242929",
+"cat": "news",
+"title": "퇴직금 떼일 걱정 줄인다…2028년부터 외부 적립 의무화",
+"date": "2026-10-29",
+"source": "sidae.com",
+"url": "https://www.sidae.com/article/2026102910491242929",
+"summary": "정부가 모든 사업장의 퇴직급여 사외적립을 단계적으로 의무화하고, 퇴직연금 적립금을 전문적으로 운용하는 기금형 제도를 활성화한다. 퇴직금 체불 위험을 줄이고 퇴직연…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-10-29"
+},
+{
 "id": "bill:PRC_E299BB67AECC4B1C9998AA46F03B96",
 "cat": "bill",
 "title": "국민건강보험법 일부개정법률안",
