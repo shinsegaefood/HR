@@ -18,6 +18,24 @@ a{color:var(--brand)}a:hover{color:#1e1b4b}
 button,input,select{font-family:inherit}
 .wrap{max-width:1280px;margin:0 auto;padding:0 24px}
 header{background:#fff;border-bottom:1px solid var(--line)}
+.btn.helpbtn{border-color:var(--brand);color:var(--brand);background:var(--brand-bg);font-weight:700}
+.btn.helpbtn:hover{background:var(--brand);color:#fff}
+dialog.help{margin:auto;width:min(760px,94vw);max-height:88vh;overflow:auto;padding:0;border:0;border-radius:14px;box-shadow:0 24px 60px rgba(15,20,40,.3);color:var(--ink)}
+dialog.help::backdrop{background:rgba(20,24,40,.45)}
+.help .hh{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+.help .hh h2{margin:0;font-size:18px}
+.help .hx{margin-left:auto;border:0;background:none;font-size:24px;cursor:pointer;color:var(--muted);width:44px;height:44px}
+.help .hb{padding:4px 20px 18px}
+.help section{padding:12px 0;border-bottom:1px dashed var(--line)}.help section:last-child{border-bottom:0}
+.help h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:16px}
+.help .hn{width:24px;height:24px;border-radius:12px;background:var(--brand);color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+.help p,.help li,.help dd{font-size:14px;line-height:1.6;margin:0}
+.help ul{margin:0;padding-left:20px}
+.help ul.lv{list-style:none;padding-left:0}.help ul.lv li{display:flex;gap:8px;align-items:baseline;margin-bottom:4px}
+.help ul.lv b{white-space:nowrap}
+.help .dot{flex-shrink:0;width:10px;height:10px;border-radius:5px;display:inline-block;transform:translateY(1px)}
+.help .new{background:#e11d48;color:#fff;border-radius:4px;padding:0 5px;font-size:12px}
+.help .faq dt{font-weight:700;font-size:14px;margin-top:8px}.help .faq dd{color:#3d4257}
 .hd{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:16px 0}
 .brand{display:flex;align-items:center;gap:12px;flex:1 1 280px}
 .logo{width:40px;height:40px;border-radius:10px;background:var(--brand);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -149,8 +167,54 @@ mark{background:#fff2a8;color:inherit;padding:0 1px;border-radius:2px}
       </select>
       <a class="btn" id="lawlink" href="https://www.law.go.kr/" target="_blank" rel="noopener">법제처에서 찾기</a>
     </form>
+    <button type="button" class="btn helpbtn" id="help-open" aria-haspopup="dialog">? 사용법</button>
   </div>
 </header>
+
+<dialog id="help" class="help" aria-labelledby="help-title">
+  <div class="hh"><h2 id="help-title">인사이슈 보드 사용법</h2><button type="button" class="hx" id="help-x" aria-label="사용법 닫기">×</button></div>
+  <div class="hb">
+    <section><h3><span class="hn">1</span>이 보드는</h3>
+      <p>매일 <b>오전 7시</b>에 법제처(법령·판례)·국회(의안)·네이버 뉴스에서 인사 관련 자료를 자동으로 모아 쌓아요. 쌓인 자료는 언제든 검색할 수 있어요. 공개된 정보만 다루고, 개인정보는 없어요.</p>
+    </section>
+    <section><h3><span class="hn">2</span>화면 구성</h3>
+      <ul>
+        <li><b>위 숫자 카드</b>: 오늘 신규 · 대응 필요 · 시행 30일 이내 · 의안 상태 변화 건수</li>
+        <li><b>전체 탭(메인)</b>: 지금 챙겨야 할 것만 모아 보여줘요. 대응 필요 전부, 최근 공포 법령·최근 의안, 최근 7일 뉴스·판례</li>
+        <li><b>오른쪽</b>: 다가오는 시행일(D-day)과 수집 키워드</li>
+      </ul>
+    </section>
+    <section><h3><span class="hn">3</span>중요도 표시</h3>
+      <ul class="lv">
+        <li><span class="dot" style="background:var(--act-dot)"></span><b>대응 필요</b>: 30일 안에 시행되는 법령, 우리 도구와 연결된 법령이 최근 60일 안에 공포됨, 최근 30일 안에 본회의 가결된 의안</li>
+        <li><span class="dot" style="background:var(--watch-dot)"></span><b>주시</b>: 최근 60일 공포 법령, 최근 30일 발의 의안, 최근 7일 안에 처리 단계가 바뀐 의안</li>
+        <li><span class="dot" style="background:var(--ref-dot)"></span><b>참고</b>: 판례·뉴스, 폐기·철회된 의안, 그 밖의 자료</li>
+      </ul>
+    </section>
+    <section><h3><span class="hn">4</span>탭 · 검색</h3>
+      <ul>
+        <li><b>뉴스·법령·판례·의안·입법예고 탭</b>을 누르면 쌓인 자료 <b>전체</b>를 최신순으로 볼 수 있어요. 위쪽 주제 버튼(법령명·검색어별)으로 좁혀 봐요.</li>
+        <li>의안·입법예고는 <b>진행 중 / 가결 / 폐기·철회</b>로 나눠 봐요 (기본은 진행 중).</li>
+        <li>맨 위 <b>검색창</b>에 단어를 넣고 기간(최근 3개월·1년·전체)을 고르면 쌓인 자료에서 찾아요. 더 찾고 싶으면 <b>[법제처에서 찾기]</b>.</li>
+      </ul>
+    </section>
+    <section><h3><span class="hn">5</span>카드 읽는 법</h3>
+      <ul>
+        <li><b class="new">NEW</b>: 오늘 아침 새로 들어온 자료</li>
+        <li><b>무엇이 바뀌었나</b>(법령 카드): 법제처가 붙인 공식 제·개정 이유와 주요 내용이에요. 눌러서 펼쳐요.</li>
+        <li><b>이 개정판 원문 · 신구법 비교 →</b>: 법제처에서 해당 개정판과 신구 조문 비교를 열어요.</li>
+        <li><b>같은 소식 N건 더</b>: 제목이 비슷한 기사는 하나로 묶어서 보여줘요.</li>
+      </ul>
+    </section>
+    <section><h3><span class="hn">6</span>자주 묻는 질문</h3>
+      <dl class="faq">
+        <dt>맨 위에 노란 줄이 떠요</dt><dd>그날 일부 출처(법제처·국회 등)에서 자료를 못 가져왔다는 뜻이에요. 다음 날 아침에 다시 모아요.</dd>
+        <dt>원하는 키워드·법령을 추가하고 싶어요</dt><dd>인사관리팀에 말씀해 주세요. 설정에 추가하면 다음 날 아침부터 모아요.</dd>
+        <dt>예전 자료가 안 보여요</dt><dd>메인은 최근 것만 보여줘요. 해당 탭을 누르거나 검색 기간을 '전체'로 바꿔 보세요.</dd>
+      </dl>
+    </section>
+  </div>
+</dialog>
 
 <main class="wrap">
   <div id="alerts"></div>
@@ -217,6 +281,14 @@ function priority(it){
 const isNew=it=>!IDX.firstRun&&it.collected===IDX.today&&it.collected!==IDX.backfillDate;
 // 첫날 일괄 수집분은 '최근'으로 치지 않는다
 const recent=it=>days(TODAY,it.collected)<=7&&it.collected!==IDX.backfillDate;
+
+// ── 사용법 창 (처음 한 번 자동으로 · '봤음'만 이 브라우저에 기억) ──
+(()=>{ const d=$('help'), open=()=>{ if(!d.open) d.showModal(); d.scrollTop=0; };
+  $('help-open').addEventListener('click',open);
+  $('help-x').addEventListener('click',()=>d.close());
+  d.addEventListener('click',e=>{ if(e.target===d) d.close(); });
+  try{ if(!localStorage.getItem('hrboard_help_seen')){ localStorage.setItem('hrboard_help_seen','1'); setTimeout(open,400); } }catch(_){}
+})();
 
 // ── 데이터 불러오기 ──
 async function getJSON(p){const r=await fetch(p,{cache:'no-store'});if(!r.ok)throw new Error(p+' '+r.status);return r.json();}
