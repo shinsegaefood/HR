@@ -2,7 +2,9 @@ name: 매일 자동수집
 
 on:
   schedule:
-    - cron: "0 22 * * *"     # 매일 22:00 UTC = 한국시간 오전 7시
+    - cron: "17 21 * * *"    # 한국시간 06:17 (정각 피함)
+    - cron: "55 21 * * *"    # 한국시간 06:17 (정각 피함)
+    - cron: "47 23 * * *"    # 한국시간 08:47 (첫 번째가 밀리거나 빠졌을 때 대비)
   workflow_dispatch:           # Actions 탭에서 "Run workflow"로 지금 바로 실행
 
 permissions:
