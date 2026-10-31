@@ -1,13 +1,13 @@
 {
- "lastRun": "2026-10-31 10:07",
+ "lastRun": "2026-10-31 11:45",
  "today": "2026-10-31",
  "firstRun": false,
  "backfillDate": "2026-10-28",
  "months": [
   "2026-10.json"
  ],
- "total": 1438,
- "added": 0,
+ "total": 1439,
+ "added": 1,
  "stageChanged": 0,
  "status": {
   "의안": "정상 746건",

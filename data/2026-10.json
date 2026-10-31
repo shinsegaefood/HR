@@ -56,6 +56,20 @@
 "collected": "2026-10-31"
 },
 {
+"id": "news:https://www.etnews.com/20261031000012",
+"cat": "news",
+"title": "“AI 때문에 인류 멸종할 수도”… 퇴직연금 저축 멈췄다는 구글 출신 ...",
+"date": "2026-10-31",
+"source": "etnews.com",
+"url": "https://www.etnews.com/20261031000012",
+"summary": "구글 출신의 인공지능(AI) 전문가가 향후 10년 안에 AI로 인해 인류가 멸종할 가능성이 50%를 넘는다며 퇴직연금 저축까지 중단했다고 밝혀 화제다. 30일(현…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-10-31"
+},
+{
 "id": "bill:PRC_B2J6H0I9G1H6F1F4B1A0A5Y1Z7X2Y7",
 "cat": "bill",
 "title": "남녀고용평등과 일·가정 양립 지원에 관한 법률 일부개정법률안",
