@@ -84,6 +84,48 @@
 "collected": "2026-11-01"
 },
 {
+"id": "news:https://www.m-i.kr/news/articleView.html?idxno=2012652",
+"cat": "news",
+"title": "[기획] 기금형 퇴직연금, 기존 계약형과 경쟁",
+"date": "2026-11-01",
+"source": "m-i.kr",
+"url": "https://www.m-i.kr/news/articleView.html?idxno=2012652",
+"summary": "매일일보 = 정수연 기자 | 퇴직연금을 직접 굴리는 가입자와 전문가에게 맡기는 가입자가 같은 사업장 안에서도 각자의 운용 방식을 선택할 수 있게 된다. 정부가 기…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-01"
+},
+{
+"id": "news:https://www.m-i.kr/news/articleView.html?idxno=2012649",
+"cat": "news",
+"title": "[기획] 500조 퇴직연금, 판 더 커진다",
+"date": "2026-11-01",
+"source": "m-i.kr",
+"url": "https://www.m-i.kr/news/articleView.html?idxno=2012649",
+"summary": "매일일보 = 정수연 기자 | 500조원을 넘어선 퇴직연금 시장이 가입 대상과 운용 방식의 확대로 한층 커질 전망이다. 정부가 퇴직급여를 회사 밖에 쌓도록 의무화하…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-01"
+},
+{
+"id": "news:https://www.viva100.com/article/20261030500303",
+"cat": "news",
+"title": "퇴직연금에 IMA·발행어음 편입 추진…증권사 연금시장 확대 기대",
+"date": "2026-11-01",
+"source": "viva100.com",
+"url": "https://www.viva100.com/article/20261030500303",
+"summary": "정부가 종합투자계좌(IMA)와 발행어음을 퇴직연금 투자대상에 추가하는 방안을 추진하면서 증권사의 연금자금 유치 기반이 확대될 전망이다. 금융회사가 기금형 퇴직연금…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-01"
+},
+{
 "id": "case:396508",
 "cat": "case",
 "title": "요양불승인처분취소 ()",
