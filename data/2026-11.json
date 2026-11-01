@@ -70,6 +70,20 @@
 "collected": "2026-11-01"
 },
 {
+"id": "news:https://www.hankyung.com/article/2026103065036",
+"cat": "news",
+"title": "\"1000만원 넣으면 2626만원 된다\"…퇴직연금族 솔깃한 이유 [김연지의 연...",
+"date": "2026-11-01",
+"source": "hankyung.com",
+"url": "https://www.hankyung.com/article/2026103065036",
+"summary": "[편집자주] 증시가 출렁일수록 퇴직연금 가입자의 고민도 깊어진다. 주식형 상품에 계속 두자니 손실이 걱정되고, 노후까지 남은 시간을 예금으로만 보내기도 아쉽다. …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-01"
+},
+{
 "id": "case:396508",
 "cat": "case",
 "title": "요양불승인처분취소 ()",
