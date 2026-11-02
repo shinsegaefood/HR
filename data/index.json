@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-02 09:42",
+ "lastRun": "2026-11-02 10:04",
  "today": "2026-11-02",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,13 +7,13 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1478,
- "added": 28,
+ "total": 1489,
+ "added": 11,
  "stageChanged": 0,
  "status": {
   "의안": "정상 746건",
-  "법령": "정상 27건",
+  "법령": "실패: <urlopen error [Errno 111] Connection refused>",
   "판례": "정상 522건",
-  "뉴스": "정상 32건"
+  "뉴스": "정상 31건"
  }
 }
