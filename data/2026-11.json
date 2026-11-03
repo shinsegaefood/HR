@@ -210,6 +210,34 @@
 "collected": "2026-11-03"
 },
 {
+"id": "news:https://www.dailian.co.kr/news/view/1710050/?sc=Naver",
+"cat": "news",
+"title": "최저임금 인상 뒤 요양시설 간호사 고용 감소…간호조무사 늘며 전문성...",
+"date": "2026-11-03",
+"source": "dailian.co.kr",
+"url": "https://www.dailian.co.kr/news/view/1710050/?sc=Naver",
+"summary": "2018년 최저임금의 가파른 인상으로 노인요양시설의 인건비 부담이 커지면서 전문 간호사 고용은 줄고 간호조무사 고용은 늘어난 것으로 나타났다. 간호사 비중이 낮아…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-03"
+},
+{
+"id": "news:http://www.techholic.co.kr/news/articleView.html?idxno=223509",
+"cat": "news",
+"title": "신한은행, 삼성자산운용과 퇴직연금 고객 자산관리 서비스 강화 협력",
+"date": "2026-11-03",
+"source": "techholic.co.kr",
+"url": "http://www.techholic.co.kr/news/articleView.html?idxno=223509",
+"summary": "신한은행(은행장 정상혁)은 지난 2일 서울 중구 신한은행 본점에서 삼성자산운용(대표이사 김우석)과 양사의 전문성을 바탕으로 퇴직연금 고객에게 다양한 투자 정보를 …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-03"
+},
+{
 "id": "bill:PRC_A2Y6Z0Y4Y2G1F1F0D4E8D3D2L3L1J1",
 "cat": "bill",
 "title": "국민건강보험법 일부개정법률안",

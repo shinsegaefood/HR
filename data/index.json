@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-03 11:53",
+ "lastRun": "2026-11-03 12:07",
  "today": "2026-11-03",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,9 +7,9 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1519,
- "added": 20,
- "stageChanged": 1,
+ "total": 1521,
+ "added": 2,
+ "stageChanged": 0,
  "status": {
   "의안": "정상 747건",
   "법령": "정상 27건",
