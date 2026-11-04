@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-04 10:19",
+ "lastRun": "2026-11-04 10:44",
  "today": "2026-11-04",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,13 +7,13 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1551,
- "added": 21,
- "stageChanged": 1,
+ "total": 1555,
+ "added": 4,
+ "stageChanged": 0,
  "status": {
-  "의안": "정상 747건",
+  "의안": "실패: <urlopen error timed out>",
   "법령": "실패: <urlopen error timed out>",
   "판례": "실패: <urlopen error timed out>",
-  "뉴스": "정상 22건"
+  "뉴스": "정상 23건"
  }
 }
