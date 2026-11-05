@@ -1,0 +1,2336 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 보안: 이 페이지는 외부로 어떤 통신도 할 수 없음 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<title>엑셀 수식 도우미</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1b2130; --sub:#646d7e; --mute:#9aa2b1; --line:#e6e9ee; --line2:#eef0f3;
+  --accent:#1f7a4d; --accent-weak:#e8f4ee; --warn:#9a5b00; --warn-weak:#fff6e8;
+  --f:#2457c5; --f-weak:#ebf0fc; --c:#1f7a4d; --c-weak:#e8f4ee; --k:#7a3fb8; --k-weak:#f3ecfb; --adv:#c2410c;
+  --code:#f4f5f8; --shadow:0 10px 30px rgba(20,30,50,.10); --soft:0 1px 2px rgba(20,30,50,.05);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--f)}
+button{font-family:inherit}
+.wrap{max-width:940px;margin:0 auto;padding:0 16px 64px}
+/* 머리 */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;font-size:13px}
+.topbar a.hub{color:var(--sub);text-decoration:none}
+.topbar a.hub:hover{color:var(--ink)}
+.topbar .ver{color:var(--mute);font-size:12px}
+.hero{display:flex;align-items:center;gap:14px;padding:18px 0 18px}
+.logo{flex:none;width:46px;height:46px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font:700 18px/1 Consolas,monospace;letter-spacing:-.5px;box-shadow:0 4px 12px rgba(31,122,77,.25)}
+.hero h1{font-size:24px;margin:0;letter-spacing:-.4px;line-height:1.25}
+.hero p{margin:2px 0 0;color:var(--sub);font-size:14px}
+/* 검색 */
+.searchbox{position:relative}
+.searchbox input{width:100%;font:inherit;font-size:17px;padding:15px 44px 15px 48px;border:1px solid var(--line);border-radius:14px;background:var(--card);outline:none;box-shadow:var(--soft);transition:border-color .15s,box-shadow .15s}
+.searchbox input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(31,122,77,.12)}
+.searchbox .ico{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--mute);pointer-events:none;display:flex}
+.searchbox .clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:none;width:30px;height:30px;border-radius:50%;font-size:16px;color:var(--mute);cursor:pointer;display:none}
+.searchbox .clear:hover{background:var(--code);color:var(--ink)}
+.subline{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);margin:8px 2px 22px}
+.dd{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);z-index:20;overflow:hidden;display:none;max-height:440px;overflow-y:auto}
+.dd .opt{display:flex;gap:12px;align-items:flex-start;padding:10px 16px;cursor:pointer}
+.dd .opt+.opt{border-top:1px solid var(--line2)}
+.dd .opt.on,.dd .opt:hover{background:var(--accent-weak)}
+.dd .opt .ds{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd .opt .tx{min-width:0;flex:1}
+.dd .more{padding:9px 16px;font-size:13px;color:var(--sub);background:var(--bg);border-top:1px solid var(--line2)}
+/* 배지·제목 */
+.badge{flex:none;display:inline-block;min-width:44px;text-align:center;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;margin-top:3px}
+.b-f{color:var(--f);background:var(--f-weak)} .b-c{color:var(--c);background:var(--c-weak)} .b-k{color:var(--k);background:var(--k-weak)}
+.advtag{display:inline-block;font-size:10.5px;font-weight:700;color:var(--adv);border:1px solid #f4c7a8;background:#fff7f1;border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:2px;line-height:1.5}
+.nm{font-weight:700}
+.tsub{color:var(--sub);font-weight:400}
+/* 예시 시각화 */
+.xv{margin-top:2px}
+.xg td{min-width:40px;height:30px;transition:background .25s,color .25s,box-shadow .25s;position:relative}
+.xg td.hd{font-weight:700;background:#fafbfc}
+.xg td.dep{background:#f1f5f9;color:#475569;font-style:italic}
+.xg td.t-no{color:#b5bcc7}
+.xg td.t-key{background:#e0e7ff!important;font-weight:700}
+.xg td.t-scan{background:#fdba74!important;outline:3px solid #ea580c;outline-offset:-3px;font-weight:700}
+.xg td.t-hit{background:#fef08a!important}
+.xg td.t-ret{box-shadow:inset 0 0 0 3px #16a34a!important}
+.xg td.res{background:#bbf7d0!important;color:#14532d;font-weight:700}
+.xg td.pop{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.xg td{transition:none}.xg td.pop{animation:none}}
+.xcap{min-height:30px;font-size:13.5px;padding:6px 2px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.xcap .g{color:#15803d}
+.xcap .stepn{font-size:11px;font-weight:700;background:var(--ink);color:#fff;border-radius:10px;padding:1px 7px}
+.xcap .btn{padding:2px 9px;font-size:12px}
+.lgs{display:inline-flex;flex-wrap:wrap;gap:4px;margin-right:6px}
+.lg{font-size:11px;border-radius:4px;padding:1px 6px;border:1px solid var(--line);background:#fff}
+.lg.t-hit{background:#fef08a;border-color:#eab308}.lg.t-ret{box-shadow:inset 0 0 0 2px #16a34a}.lg.t-no{color:#9aa1ad}.lg.t-key{background:#e0e7ff}.lg.res{background:#bbf7d0;color:#14532d;font-weight:700}
+.xc{cursor:pointer;border-radius:8px;padding:7px 8px!important;border-top:0!important;margin-bottom:4px;border:1px solid transparent}
+.xc:hover{background:#f8fafc}
+.xc.on{background:#f0fdf4;border-color:#bbf7d0}
+.xc .fr{font-weight:700}
+.xc .to{color:var(--sub)}
+.xbtns{margin-left:auto;display:flex;gap:4px}
+.xplay{color:#c2410c;border-color:#f3c9a8!important;font-weight:700}
+.xv.playing .xc{pointer-events:none;opacity:.85}
+.xv.playing .xc.on{opacity:1}
+
+/* 카드·목록 */
+.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:var(--soft)}
+.sec>h2,.sh{font-size:15px;margin:0 0 12px;color:var(--ink);font-weight:700}
+.shrow{display:flex;justify-content:space-between;align-items:baseline;margin:6px 2px 12px}
+.shrow h2{font-size:16px;margin:0}
+.shrow span{font-size:12.5px;color:var(--mute)}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px;margin-bottom:26px}
+.topic{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;box-shadow:var(--soft);transition:border-color .15s,box-shadow .15s}
+.topic:hover{border-color:#cfd5de;box-shadow:0 6px 18px rgba(20,30,50,.07)}
+.topic .th{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:0 0 8px;cursor:pointer;text-align:left;color:var(--ink)}
+.topic .ti{font-size:18px;line-height:1}
+.topic .tn{font-weight:700;font-size:15px;flex:1}
+.topic .tc{font-size:12px;color:var(--mute)}
+.topic .th:hover .tn{color:var(--accent)}
+.topic ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--line2)}
+.topic li{padding:6px 2px;font-size:13.5px;cursor:pointer;color:#333b4b;display:flex;justify-content:space-between;gap:6px}
+.topic li+li{border-top:1px dashed var(--line2)}
+.topic li:hover{color:var(--accent)}
+.topic li:after{content:"›";color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink);transition:border-color .15s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .n{color:var(--mute);margin-left:3px;font-size:12px}
+.chip.on .n{color:#c9ced8}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.filters{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--line2)}
+.list .row{display:flex;gap:12px;align-items:flex-start;padding:11px 6px;cursor:pointer;border-radius:8px}
+.list .row+.row{border-top:1px solid var(--line2)}
+.list .row:hover{background:#f8f9fb}
+.list .row .ds{font-size:13px;color:var(--sub);margin-top:1px}
+.cnt{font-size:12.5px;color:var(--mute);margin:10px 6px 2px}
+.morebtn{display:block;width:100%;margin-top:8px;padding:9px;border:1px dashed var(--line);border-radius:10px;background:none;color:var(--sub);cursor:pointer;font-size:13.5px}
+.morebtn:hover{border-color:var(--accent);color:var(--accent)}
+/* 항목 */
+.back{margin-bottom:12px}
+.linkbtn{border:0;background:none;padding:4px 0;color:var(--sub);cursor:pointer;font-size:13.5px}
+.linkbtn:hover{color:var(--ink)}
+.item .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item .head .cat{font-size:13px;color:var(--mute)}
+.item h2.title{font-size:26px;color:var(--ink);margin:6px 0 0;letter-spacing:-.4px;line-height:1.3}
+.item .subtitle{font-size:16px;color:var(--sub);margin-top:2px}
+.fbox{display:flex;align-items:stretch;gap:8px;margin:16px 0 12px}
+.fbox code{flex:1;min-width:0;display:block;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:12px 14px;font-family:Consolas,"D2Coding",monospace;font-size:14.5px;overflow-x:auto;white-space:pre}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.primary:hover{opacity:.92;color:#fff}
+.btn.xplay{color:var(--adv);border-color:#f4c7a8;font-weight:700}
+.btn.xplay:hover{background:#fff7f1}
+.item p.desc{margin:0;font-size:15.5px;color:#2b3242}
+.item h3{font-size:13px;margin:26px 0 8px;color:var(--sub);font-weight:700;letter-spacing:.2px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.item h3 .h3hint{font-weight:400;color:var(--mute);font-size:12.5px;letter-spacing:0}
+table.args{border-collapse:collapse;width:100%;font-size:14px}
+table.args td{border-bottom:1px solid var(--line2);padding:7px 8px;vertical-align:top}
+table.args td:first-child{white-space:nowrap;font-family:Consolas,monospace;color:var(--f);width:1%;font-weight:700}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:st}
+ol.steps li{counter-increment:st;position:relative;padding:5px 0 5px 34px}
+ol.steps li:before{content:counter(st);position:absolute;left:0;top:6px;width:22px;height:22px;border-radius:50%;background:var(--accent-weak);color:var(--accent);font-size:12px;font-weight:700;display:grid;place-items:center}
+.grid-wrap{overflow-x:auto}
+table.grid{border-collapse:collapse;font-size:13.5px;margin:2px 0 6px;background:#fff}
+table.grid th,table.grid td{border:1px solid #e3e6eb;padding:4px 10px;white-space:nowrap}
+table.grid th{background:#f3f4f6;color:var(--mute);font-weight:400;font-size:11.5px;text-align:center}
+table.grid tr.hdr td{font-weight:700;background:#fafbfc}
+.calc{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:7px 0;font-size:14px}
+.calc .cell{font-weight:700;color:var(--sub);font-size:11.5px;background:var(--code);border-radius:4px;padding:1px 6px}
+.calc code{font-family:Consolas,monospace;word-break:break-all;max-width:100%;background:var(--code);padding:2px 7px;border-radius:5px}
+.calc .res{font-weight:700;color:var(--accent)}
+.calc .btn{padding:2px 9px;font-size:12px}
+ul.tips{margin:0;padding-left:18px} ul.tips li{margin:3px 0}
+.tipbox{background:var(--warn-weak);border:1px solid #f6e3c3;border-radius:12px;padding:10px 14px;font-size:14.5px}
+.nextbox{border:1px solid #f4d6c0;background:#fffaf6;border-radius:12px;padding:4px 14px}
+.nextbox .q{display:flex;gap:8px;align-items:baseline;padding:9px 2px;cursor:pointer;font-weight:700;font-size:14.5px}
+.nextbox .q+.q{border-top:1px dashed #f4d6c0}
+.nextbox .q:hover{color:var(--adv)}
+.nextbox .q .arrow{color:var(--adv)}
+.nextbox .q .sub{font-weight:400;font-size:12.5px;color:var(--mute)}
+.relrow{display:flex;gap:10px;align-items:baseline;margin-top:10px}
+.relrow .rl{flex:none;font-size:12px;color:var(--mute);width:34px}
+.hint{font-size:13px;color:var(--sub)}
+.lgs{flex-basis:100%}
+.empty .big{font-size:17px;font-weight:700;margin-bottom:4px}
+.empty .hintp{font-size:13.5px;color:var(--sub);margin:0 0 14px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+footer{font-size:12px;color:var(--mute);margin-top:28px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+footer summary{cursor:pointer}
+footer details[open]{flex-basis:100%}
+footer #log div{margin:4px 0}
+@media (max-width:600px){.fbox{flex-direction:column}.item h2.title{font-size:22px}.hero h1{font-size:21px}.sec{padding:16px}.subline .kb{display:none}.topics{grid-template-columns:1fr 1fr;gap:8px}.topic{padding:12px}.topic .th{padding:0}.topic ul{display:none}.topic .tn{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><span></span><span class="ver" id="ver"></span></div>
+  <header class="hero">
+    <div class="logo">fx</div>
+    <div><h1>엑셀 수식 도우미</h1><p>하고 싶은 작업을 적으면 수식과 사용법을 찾아드려요</p></div>
+  </header>
+  <div class="searchbox">
+    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+    <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="예: 사번으로 이름 찾기, 드롭다운, 근속연수, vlookup">
+    <button class="clear" id="clr" title="지우기">✕</button>
+    <div class="dd" id="dd"></div>
+  </div>
+  <div class="subline"><span>초성(ㄷㄹㄷㅇ)·영문 함수명·오타로도 찾아요<span class="kb"> · ↑↓ 고르고 Enter</span></span><span>🔒 입력 내용은 어디로도 보내지 않아요 — 실제 이름·사번 대신 하고 싶은 작업만 적어주세요</span></div>
+
+  <main id="main"></main>
+
+  <footer>
+    <span>엑셀 365 기준 · 브라우저 안에서만 동작 · 없는 내용은 담당자에게 추가 요청해주세요</span>
+    <details><summary>업데이트 기록</summary><div id="log"></div></details>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+window.EXCEL_CATS = {
+  lookup:"찾기·참조", sum:"합계·개수", num:"숫자 계산·반올림", logic:"조건·오류처리",
+  date:"날짜·시간", text:"텍스트 정리", compare:"중복·비교", dyn:"필터·정렬(365)",
+  input:"입력·드롭다운", format:"서식·표시", clean:"데이터 정리", analyze:"피벗·요약",
+  view:"보기·인쇄", protect:"보호·파일", fix:"문제 해결"
+};
+window.EXCEL_DATA = [];
+(function(){
+var P = function(o){ o.t="f"; window.EXCEL_DATA.push(o); };
+var EMP = {c:["사번","이름","부서"], r:[[1001,"김하늘","영업"],[1002,"이바다","인사"],[1003,"박산","생산"]]};
+var DEPT = {c:["이름","부서","급여"], r:[["김하늘","영업",300],["이바다","인사",320],["박산","영업",280],["최들","생산",310]]};
+var DEPT2 = {c:["이름","부서","직급","급여"], r:[["김하늘","영업","사원",300],["이바다","영업","대리",350],["박산","영업","사원",280],["최들","인사","사원",310]]};
+function ex(base, calc, note){ return {c:base.c, r:base.r, calc:calc, note:note}; }
+
+/* ===== 찾기·참조 ===== */
+P({id:"xlookup",fn:"XLOOKUP",cat:"lookup",pop:1,title:"XLOOKUP — 값으로 찾아서 가져오기",
+ k:["엑스룩업","익스룩업","찾기","불러오기","가져오기","조회","매칭","vlookup 대신","룩업"],
+ f:"=XLOOKUP(찾을값, 찾을범위, 가져올범위, [없을때], [일치방식], [검색방향])",
+ d:"찾을범위에서 값을 찾아 같은 줄의 가져올범위 값을 돌려줘요. VLOOKUP보다 쉽고, 왼쪽 열도 가져올 수 있어요. 365 추천 1순위.",
+ args:[["찾을값","찾을 값 (예: 사번)"],["찾을범위","찾을값이 들어 있는 한 열"],["가져올범위","결과로 가져올 열"],["없을때","못 찾았을 때 보여줄 값 (생략하면 #N/A)"],["일치방식","0=정확히(기본), -1=작거나 같은 값, 1=크거나 같은 값, 2=와일드카드"],["검색방향","1=위에서부터(기본), -1=아래에서부터(마지막 값 찾기)"]],
+ ex:ex(EMP,[["E2","=XLOOKUP(1002,A2:A4,B2:B4)","이바다"],["E3",'=XLOOKUP(1009,A2:A4,B2:B4,"없음")',"없음"],["E4","=XLOOKUP(\"박산\",B2:B4,A2:A4)","1003"]]),
+ tips:["찾을범위와 가져올범위의 행 수가 같아야 해요.","사번이 한쪽은 숫자, 한쪽은 텍스트면 못 찾아요 → '텍스트형 숫자 변환' 참고.","다른 시트에서 가져올 땐 범위를 클릭하면 '시트명!A:A'로 자동 입력돼요."],
+ rel:["c_find_name","c_lookup_multi","vlookup","c_text_number"]});
+P({id:"vlookup",fn:"VLOOKUP",cat:"lookup",pop:1,title:"VLOOKUP — 표의 왼쪽 열에서 찾아 오른쪽 값 가져오기",
+ k:["브이룩업","뷔룩업","찾기","불러오기","조회","매칭","룩업"],
+ f:"=VLOOKUP(찾을값, 표범위, 열번호, FALSE)",
+ d:"표범위의 첫 번째 열에서 찾을값을 찾아, 같은 줄의 몇 번째 열 값을 가져와요. 오래 써온 함수라 기존 파일에 많아요.",
+ args:[["찾을값","찾을 값"],["표범위","찾을값이 맨 왼쪽 열에 있는 표"],["열번호","표범위 안에서 몇 번째 열을 가져올지 (1부터)"],["FALSE","정확히 일치 — 거의 항상 FALSE(또는 0)"]],
+ ex:ex(EMP,[["E2","=VLOOKUP(1003,A2:C4,3,FALSE)","생산"],["E3","=VLOOKUP(1001,A2:C4,2,FALSE)","김하늘"]]),
+ tips:["마지막 FALSE를 빼면 비슷한 값을 엉뚱하게 가져와요.","찾을값보다 왼쪽 열은 못 가져와요 → XLOOKUP 또는 INDEX+MATCH.","아래로 복사할 땐 표범위를 $A$2:$C$4처럼 고정(F4)하세요."],
+ rel:["xlookup","c_left_lookup","c_absolute_ref"]});
+P({id:"hlookup",fn:"HLOOKUP",cat:"lookup",title:"HLOOKUP — 가로로 된 표에서 찾기",
+ k:["에이치룩업","가로 찾기","가로 조회"],
+ f:"=HLOOKUP(찾을값, 표범위, 행번호, FALSE)",
+ d:"표범위의 첫 번째 행에서 찾을값을 찾아 아래 몇 번째 행 값을 가져와요. 월이 가로로 나열된 표에 써요.",
+ args:[["찾을값","찾을 값 (예: 2월)"],["표범위","찾을값이 맨 윗줄에 있는 표"],["행번호","몇 번째 행 값을 가져올지"],["FALSE","정확히 일치"]],
+ ex:{c:["구분","1월","2월","3월"],r:[["인원",10,12,15]],calc:[["F2",'=HLOOKUP("2월",A1:D2,2,FALSE)',"12"]]},
+ tips:["365에서는 XLOOKUP으로 가로 표도 찾을 수 있어요: =XLOOKUP(\"2월\",B1:D1,B2:D2)"],rel:["xlookup"]});
+P({id:"index",fn:"INDEX",cat:"lookup",title:"INDEX — 범위에서 몇 번째 값 가져오기",
+ k:["인덱스","몇번째","위치 값"],
+ f:"=INDEX(범위, 행번호, [열번호])",
+ d:"범위 안에서 지정한 행·열 위치의 값을 가져와요. MATCH와 짝지어 찾기에 많이 써요.",
+ args:[["범위","값이 있는 범위"],["행번호","위에서 몇 번째"],["열번호","왼쪽에서 몇 번째 (한 열이면 생략)"]],
+ ex:ex(EMP,[["E2","=INDEX(B2:B4,2)","이바다"],["E3","=INDEX(A2:C4,3,3)","생산"]]),
+ rel:["match","c_left_lookup"]});
+P({id:"match",fn:"MATCH",cat:"lookup",title:"MATCH — 값이 몇 번째에 있는지",
+ k:["매치","위치","몇번째","순번 찾기"],
+ f:"=MATCH(찾을값, 범위, 0)",
+ d:"찾을값이 범위에서 몇 번째에 있는지 숫자로 알려줘요. 마지막 0은 정확히 일치.",
+ args:[["찾을값","찾을 값"],["범위","한 줄(열 또는 행)"],["0","정확히 일치 (꼭 넣기)"]],
+ ex:ex(EMP,[["E2","=MATCH(1003,A2:A4,0)","3"]]),
+ rel:["index","xmatch","c_left_lookup"]});
+P({id:"xmatch",fn:"XMATCH",cat:"lookup",title:"XMATCH — MATCH의 365 버전",
+ k:["엑스매치","위치","몇번째"],
+ f:"=XMATCH(찾을값, 범위, [일치방식], [검색방향])",
+ d:"MATCH와 같지만 기본이 정확히 일치라 0을 안 써도 되고, 아래에서부터 찾기도 돼요.",
+ ex:ex(EMP,[["E2","=XMATCH(1002,A2:A4)","2"]]),rel:["match"]});
+P({id:"choosecols",fn:"CHOOSECOLS",cat:"dyn",title:"CHOOSECOLS — 원하는 열만 골라 가져오기",
+ k:["열 선택","열만","필요한 열","컬럼 선택"],
+ f:"=CHOOSECOLS(범위, 열번호1, 열번호2, ...)",
+ d:"표에서 필요한 열만 골라 새로 펼쳐 보여줘요. 원본은 그대로예요.",
+ ex:ex(EMP,[["E1","=CHOOSECOLS(A1:C4,1,3)","사번·부서 두 열이 펼쳐짐","s"]]),
+ tips:["결과가 여러 칸에 펼쳐지므로 오른쪽·아래 칸이 비어 있어야 해요 (#SPILL! 방지)."],rel:["filter","c_spill"]});
+P({id:"take",fn:"TAKE",cat:"dyn",title:"TAKE — 위(아래)에서 몇 줄만 가져오기",
+ k:["상위 몇개","앞에서","위에서","몇줄만"],
+ f:"=TAKE(범위, 행수, [열수])",
+ d:"범위의 위에서부터 행수만큼 가져와요. 행수를 음수로 쓰면 아래에서부터.",
+ ex:ex(EMP,[["E2","=TAKE(A2:C4,2)","1001·1002 두 줄","s"],["E5","=TAKE(A2:C4,-1)","1003 박산 생산 (마지막 줄)","s"]]),
+ rel:["c_top_n","drop"]});
+P({id:"drop",fn:"DROP",cat:"dyn",title:"DROP — 앞(뒤) 몇 줄 빼고 가져오기",
+ k:["제외","머리글 빼고","제목 빼고"],
+ f:"=DROP(범위, 뺄행수, [뺄열수])",
+ d:"범위에서 위의 몇 줄을 뺀 나머지를 보여줘요. 머리글 행 제외할 때 편해요.",
+ ex:ex(EMP,[["E1","=DROP(A1:C4,1)","머리글 빼고 3줄","s"]]),rel:["take"]});
+P({id:"indirect",fn:"INDIRECT",cat:"lookup",title:"INDIRECT — 글자로 쓴 주소를 실제 참조로",
+ k:["인다이렉트","시트 이름으로","주소 만들기","동적 참조","시트명 참조"],
+ f:'=INDIRECT("시트명!A1") 또는 =INDIRECT(A1&"!B2")',
+ d:"\"B3\" 같은 글자를 실제 셀 주소로 바꿔줘요. 셀에 적힌 시트 이름으로 다른 시트를 참조할 때 써요.",
+ ex:ex(EMP,[["E2",'=INDIRECT("B"&3)',"이바다"]]),
+ tips:["시트 이름에 공백이 있으면 작은따옴표로 감싸야 해요: =INDIRECT(\"'\"&A1&\"'!B2\")","파일이 무거워질 수 있어 많이 쓰지 않는 게 좋아요."],rel:["c_sheet_by_name","k_dropdown_linked"]});
+P({id:"row",fn:"ROW",cat:"lookup",title:"ROW / COLUMN — 행 번호·열 번호",
+ k:["로우","컬럼","행번호","열번호","번호 매기기"],
+ f:"=ROW()  /  =ROW(A5)  /  =COLUMN()",
+ d:"셀의 행 번호(열 번호)를 숫자로 돌려줘요. 일련번호를 만들 때 =ROW()-1 처럼 써요.",
+ ex:{c:["번호"],r:[[null]],calc:[["A2","=ROW()-1","1"],["B1","=ROW(A5)","5"]]},
+ rel:["c_serial","sequence"]});
+P({id:"hyperlink",fn:"HYPERLINK",cat:"lookup",title:"HYPERLINK — 클릭하면 이동하는 링크",
+ k:["하이퍼링크","링크","바로가기","시트 이동"],
+ f:'=HYPERLINK("#\'시트명\'!A1", "표시할 글자")',
+ d:"클릭하면 다른 시트·파일·웹 주소로 이동하는 링크를 만들어요. 시트 목차 만들 때 좋아요.",
+ tips:["같은 파일 안의 시트는 주소 앞에 #을 붙여요.","링크 셀을 선택만 하려면 마우스를 꾹 누르고 있으면 돼요."]});
+P({id:"transpose",fn:"TRANSPOSE",cat:"dyn",title:"TRANSPOSE — 가로·세로 바꾸기",
+ k:["트랜스포즈","행열 바꾸기","가로를 세로로","세로를 가로로","전치"],
+ f:"=TRANSPOSE(범위)",
+ d:"가로로 된 데이터를 세로로(또는 반대로) 뒤집어 보여줘요. 원본이 바뀌면 같이 바뀌어요.",
+ ex:{c:["1월","2월","3월"],r:[[10,12,15]],calc:[["E1","=TRANSPOSE(A1:C2)","세로 3줄 × 2열로 펼쳐짐","s"]]},
+ rel:["k_paste_special"]});
+
+/* ===== 합계·개수 ===== */
+P({id:"sum",fn:"SUM",cat:"sum",title:"SUM — 합계",
+ k:["썸","합계","더하기","총합","총액","합","sum"],
+ f:"=SUM(범위)",
+ d:"범위 안의 숫자를 모두 더해요. 글자·빈칸은 무시해요.",
+ ex:{c:["이름","기본급","수당"],r:[["김하늘",3000000,200000],["이바다",3200000,150000],["박산",2800000,0]],
+   calc:[["B5","=SUM(B2:B4)","9,000,000"],["D5","=SUM(B2:C4)","9,350,000"]]},
+ tips:["합계가 0이나 이상하게 나오면 숫자가 텍스트로 들어간 경우가 많아요 → 셀 왼쪽 위 초록 삼각형 확인.","Alt + = 를 누르면 SUM이 자동으로 들어가요."],
+ rel:["sumif","sumifs","c_text_number","subtotal"]});
+P({id:"sumif",fn:"SUMIF",cat:"sum",pop:1,title:"SUMIF — 조건 하나 맞는 것만 합계",
+ k:["썸이프","조건 합계","조건부 합계","부서별 합계","~별 합계","특정 값만 더하기"],
+ f:"=SUMIF(조건범위, 조건, 합계범위)",
+ d:"조건범위에서 조건에 맞는 줄만 골라 합계범위를 더해요.",
+ args:[["조건범위","조건을 확인할 열 (예: 부서)"],["조건","\"영업\", \">=100\", \"*팀\", 셀 참조 등"],["합계범위","더할 열 (예: 급여)"]],
+ ex:ex(DEPT,[["E2",'=SUMIF(B2:B5,"영업",C2:C5)',"580"],["E3",'=SUMIF(C2:C5,">=300")',"930"]]),
+ tips:["조건이 2개 이상이면 SUMIFS를 쓰세요.","부등호 조건에 셀을 쓰려면 \">=\"&E1 처럼 &로 이어요."],
+ rel:["sumifs","countif","c_sum_by_dept"]});
+P({id:"sumifs",fn:"SUMIFS",cat:"sum",pop:1,title:"SUMIFS — 조건 여러 개 맞는 것만 합계",
+ k:["썸이프스","다중 조건 합계","여러 조건 합계","조건 2개 합계","기간 합계"],
+ f:"=SUMIFS(합계범위, 조건범위1, 조건1, 조건범위2, 조건2, ...)",
+ d:"모든 조건을 동시에 만족하는 줄만 더해요. 순서가 SUMIF와 달리 합계범위가 맨 앞이에요.",
+ args:[["합계범위","더할 열"],["조건범위1, 조건1","첫 번째 조건"],["조건범위2, 조건2","두 번째 조건 (계속 추가 가능)"]],
+ ex:ex(DEPT2,[["F2",'=SUMIFS(D2:D5,B2:B5,"영업",C2:C5,"사원")',"580"]]),
+ tips:["모든 범위의 행 수가 같아야 해요.","'A 또는 B' 조건은 SUMIFS 두 개를 더하세요."],
+ rel:["sumif","c_sum_period","countifs"]});
+P({id:"count",fn:"COUNT",cat:"sum",title:"COUNT / COUNTA / COUNTBLANK — 개수 세기",
+ k:["카운트","카운타","개수","몇개","몇명","빈칸 개수","숫자 개수","인원수"],
+ f:"=COUNT(범위)  /  =COUNTA(범위)  /  =COUNTBLANK(범위)",
+ d:"COUNT는 숫자 칸만, COUNTA는 비어있지 않은 모든 칸을, COUNTBLANK는 빈칸을 세요. 인원수는 보통 COUNTA.",
+ ex:{c:["이름","점수"],r:[["김하늘",90],["이바다","결시"],["박산",null],["최들",75]],
+   calc:[["D2","=COUNT(B2:B5)","2"],["D3","=COUNTA(B2:B5)","3"],["D4","=COUNTBLANK(B2:B5)","1"]]},
+ tips:["수식 결과가 빈 글자(\"\")인 칸도 COUNTA는 세요."],rel:["countif","c_count_nonblank"]});
+P({id:"countif",fn:"COUNTIF",cat:"sum",pop:1,title:"COUNTIF — 조건 맞는 개수 세기",
+ k:["카운트이프","조건 개수","부서별 인원","몇명","중복 확인","개수 세기"],
+ f:"=COUNTIF(범위, 조건)",
+ d:"범위에서 조건에 맞는 칸이 몇 개인지 세요. 중복 확인에도 많이 써요.",
+ ex:ex(DEPT,[["E2",'=COUNTIF(B2:B5,"영업")',"2"],["E3",'=COUNTIF(A2:A5,"*하*")',"1"]]),
+ tips:["* 는 아무 글자 여러 개, ? 는 아무 글자 한 개.","255자 넘는 글자는 제대로 못 세요."],
+ rel:["countifs","c_dup_mark","c_count_contains"]});
+P({id:"countifs",fn:"COUNTIFS",cat:"sum",title:"COUNTIFS — 조건 여러 개 맞는 개수",
+ k:["카운트이프스","다중 조건 개수","여러 조건 개수","월별 인원","부서별 직급별"],
+ f:"=COUNTIFS(범위1, 조건1, 범위2, 조건2, ...)",
+ d:"모든 조건을 만족하는 줄이 몇 개인지 세요.",
+ ex:ex(DEPT2,[["F2",'=COUNTIFS(B2:B5,"영업",C2:C5,"사원")',"2"]]),
+ rel:["countif","c_monthly_hires","sumifs"]});
+P({id:"average",fn:"AVERAGE",cat:"sum",title:"AVERAGE / AVERAGEIF(S) — 평균",
+ k:["애버리지","평균","조건 평균","부서별 평균"],
+ f:"=AVERAGE(범위)  /  =AVERAGEIF(조건범위, 조건, 평균범위)",
+ d:"평균을 구해요. 빈칸은 빼고, 0은 포함해서 계산해요.",
+ ex:ex(DEPT,[["E2","=AVERAGE(C2:C5)","302.5"],["E3",'=AVERAGEIF(B2:B5,"영업",C2:C5)',"290"]]),
+ tips:["0을 빼고 평균 내려면 =AVERAGEIF(C2:C5,\"<>0\")"],rel:["sumif"]});
+P({id:"max",fn:"MAX",cat:"sum",title:"MAX / MIN — 가장 큰 값·작은 값",
+ k:["맥스","민","최대","최소","최고","최저","가장 큰","가장 작은","최근 날짜"],
+ f:"=MAX(범위)  /  =MIN(범위)",
+ d:"범위에서 가장 큰(작은) 숫자를 돌려줘요. 날짜도 숫자라서 최근 날짜는 MAX.",
+ ex:ex(DEPT,[["E2","=MAX(C2:C5)","320"],["E3","=MIN(C2:C5)","280"]]),rel:["maxifs","large"]});
+P({id:"maxifs",fn:"MAXIFS",cat:"sum",title:"MAXIFS / MINIFS — 조건 맞는 것 중 최대·최소",
+ k:["맥스이프스","조건 최대","부서별 최고","조건 최소","부서별 최저"],
+ f:"=MAXIFS(최대값범위, 조건범위, 조건, ...)",
+ d:"조건에 맞는 줄 중에서 가장 큰(작은) 값을 찾아요.",
+ ex:ex(DEPT,[["E2",'=MAXIFS(C2:C5,B2:B5,"영업")',"300"],["E3",'=MINIFS(C2:C5,B2:B5,"영업")',"280"]]),rel:["max"]});
+P({id:"sumproduct",fn:"SUMPRODUCT",cat:"sum",title:"SUMPRODUCT — 곱해서 합계",
+ k:["썸프로덕트","곱한 합계","수량 단가","금액 합계","가중"],
+ f:"=SUMPRODUCT(범위1, 범위2)",
+ d:"같은 줄끼리 곱한 다음 모두 더해요. 수량×단가 합계를 한 번에 구할 때 써요.",
+ ex:{c:["품목","수량","단가"],r:[["A",2,1000],["B",3,500],["C",1,2000]],calc:[["E2","=SUMPRODUCT(B2:B4,C2:C4)","5,500"]]},
+ tips:["조건 계산도 돼요: =SUMPRODUCT((B2:B10=\"영업\")*C2:C10)"]});
+P({id:"subtotal",fn:"SUBTOTAL",cat:"sum",title:"SUBTOTAL — 필터로 보이는 것만 합계·개수",
+ k:["서브토탈","부분합","필터 합계","보이는 것만","숨긴 행 제외"],
+ f:"=SUBTOTAL(109, 범위)",
+ d:"필터·숨기기로 가려진 행은 빼고 계산해요. 109=합계, 103=개수, 101=평균.",
+ args:[["109","합계 (숨긴 행 제외)"],["103","비어있지 않은 개수"],["101","평균"],["104 / 105","최대 / 최소"]],
+ ex:ex(DEPT,[["C6","=SUBTOTAL(109,C2:C5)","1,210 (필터하면 보이는 것만)"]]),
+ rel:["c_filter_sum","c_serial_filter","aggregate"]});
+P({id:"aggregate",fn:"AGGREGATE",cat:"sum",title:"AGGREGATE — 오류 무시하고 계산",
+ k:["애그리게이트","오류 무시","#N/A 무시","에러 무시 합계"],
+ f:"=AGGREGATE(9, 6, 범위)",
+ d:"범위에 #N/A 같은 오류가 섞여 있어도 무시하고 계산해요. 첫 숫자 9=합계, 두 번째 6=오류 무시.",
+ ex:{c:["값"],r:[[10],["=NA()"],[20]],calc:[["C2","=AGGREGATE(9,6,A2:A4)","30"]]},
+ tips:["두 번째 숫자 7 = 숨긴 행 + 오류 무시."],rel:["subtotal","iferror"]});
+P({id:"rank",fn:"RANK.EQ",cat:"num",title:"RANK.EQ — 순위",
+ k:["랭크","순위","등수","몇등"],
+ f:"=RANK.EQ(값, 범위, [순서])",
+ d:"값이 범위에서 몇 등인지 알려줘요. 순서 0(생략)=큰 값이 1등, 1=작은 값이 1등.",
+ ex:{c:["이름","실적"],r:[["김하늘",90],["이바다",85],["박산",95],["최들",85]],
+   calc:[["C2","=RANK.EQ(B2,$B$2:$B$5)","2"],["C3","=RANK.EQ(B3,$B$2:$B$5)","3"],["C4","=RANK.EQ(B4,$B$2:$B$5)","1"]]},
+ tips:["같은 값은 같은 등수, 그 다음 등수는 건너뛰어요 (3,3 다음 5).","범위는 꼭 $로 고정하세요."],rel:["c_rank_group","large"]});
+P({id:"large",fn:"LARGE",cat:"num",title:"LARGE / SMALL — n번째로 큰 값·작은 값",
+ k:["라지","스몰","2번째","n번째","상위","하위"],
+ f:"=LARGE(범위, n)  /  =SMALL(범위, n)",
+ d:"범위에서 n번째로 큰(작은) 값을 돌려줘요.",
+ ex:{c:["이름","실적"],r:[["김하늘",90],["이바다",85],["박산",95],["최들",85]],calc:[["D2","=LARGE(B2:B5,2)","90"],["D3","=SMALL(B2:B5,1)","85"]]},
+ rel:["c_top_n","rank"]});
+P({id:"median",fn:"MEDIAN",cat:"num",title:"MEDIAN — 중앙값",
+ k:["미디언","중앙값","중간값"],
+ f:"=MEDIAN(범위)",d:"크기 순으로 줄 세웠을 때 가운데 값. 튀는 값이 있을 때 평균보다 대표성이 좋아요.",
+ ex:{c:["실적"],r:[[90],[85],[95],[85]],calc:[["C2","=MEDIAN(A2:A5)","87.5"]]}});
+P({id:"round",fn:"ROUND",cat:"num",pop:1,title:"ROUND — 반올림",
+ k:["라운드","반올림","소수점","자릿수"],
+ f:"=ROUND(숫자, 자릿수)",
+ d:"자릿수 위치에서 반올림해요. 1=소수 첫째 자리, 0=정수, -1=십 원 단위, -3=천 원 단위.",
+ ex:{c:["값"],r:[[1234.567],[1234567]],calc:[["C2","=ROUND(A2,1)","1234.6"],["C3","=ROUND(A3,-3)","1,235,000"]]},
+ tips:["셀 서식으로 소수점만 숨기면 실제 값은 그대로라 합계가 어긋날 수 있어요 → ROUND로 값을 확정하세요."],
+ rel:["rounddown","roundup","c_won_cut"]});
+P({id:"rounddown",fn:"ROUNDDOWN",cat:"num",pop:1,title:"ROUNDDOWN — 버림(절사)",
+ k:["라운드다운","버림","절사","원단위 절사","10원 미만 절사","내림"],
+ f:"=ROUNDDOWN(숫자, 자릿수)",
+ d:"지정한 자리 아래를 무조건 버려요. 급여·보험료 원 단위 절사에 써요.",
+ ex:{c:["값"],r:[[123456],[3.789]],calc:[["C2","=ROUNDDOWN(A2,-1)","123,450"],["C3","=ROUNDDOWN(A3,1)","3.7"]]},
+ rel:["c_won_cut","roundup","trunc"]});
+P({id:"roundup",fn:"ROUNDUP",cat:"num",title:"ROUNDUP — 올림",
+ k:["라운드업","올림","절상"],
+ f:"=ROUNDUP(숫자, 자릿수)",d:"지정한 자리 아래가 조금이라도 있으면 올려요.",
+ ex:{c:["값"],r:[[123451]],calc:[["C2","=ROUNDUP(A2,-1)","123,460"]]},rel:["rounddown","ceiling"]});
+P({id:"trunc",fn:"TRUNC",cat:"num",title:"TRUNC / INT — 소수점 버리기",
+ k:["트렁크","인트","정수","소수점 버림","정수만"],
+ f:"=TRUNC(숫자)  /  =INT(숫자)",
+ d:"소수점 아래를 버려요. 양수는 둘이 같고, 음수일 때 INT는 더 작은 정수로 내려가요.",
+ ex:{c:["값"],r:[[7.9],[-3.7]],calc:[["C2","=INT(A2)","7"],["C3","=TRUNC(A3)","-3"],["D3","=INT(A3)","-4"]]},rel:["rounddown"]});
+P({id:"ceiling",fn:"CEILING.MATH",cat:"num",title:"CEILING.MATH / FLOOR.MATH — 배수로 올림·내림",
+ k:["실링","플로어","배수","100원 단위","단위 올림","단위 내림"],
+ f:"=CEILING.MATH(숫자, 배수)  /  =FLOOR.MATH(숫자, 배수)",
+ d:"가장 가까운 배수로 올리거나 내려요. 30분 단위 근무시간 맞출 때도 써요.",
+ ex:{c:["값"],r:[[1234]],calc:[["C2","=CEILING.MATH(A2,100)","1,300"],["C3","=FLOOR.MATH(A2,100)","1,200"]]},rel:["roundup","c_time_unit"]});
+P({id:"mod",fn:"MOD",cat:"num",title:"MOD — 나머지",
+ k:["모드","나머지","짝수","홀수","나누기 나머지"],
+ f:"=MOD(숫자, 나눌수)",d:"나눈 나머지를 돌려줘요. 짝수/홀수 구분, 자정 넘는 근무시간 계산에 써요.",
+ ex:{c:["값"],r:[[10]],calc:[["C2","=MOD(A2,3)","1"],["C3",'=IF(MOD(A2,2)=0,"짝수","홀수")',"짝수"]]},rel:["c_night_shift"]});
+P({id:"abs",fn:"ABS",cat:"num",title:"ABS — 절댓값 (부호 없애기)",
+ k:["앱스","절댓값","절대값","마이너스 없애기","차이 크기"],
+ f:"=ABS(숫자)",d:"마이너스 부호를 떼고 크기만 돌려줘요. 차액이 있는지 볼 때 편해요.",
+ ex:{c:["차액"],r:[[-5000]],calc:[["C2","=ABS(A2)","5,000"]]},rel:["c_diff_two"]});
+
+/* ===== 조건·오류 ===== */
+P({id:"if",fn:"IF",cat:"logic",pop:1,title:"IF — 조건에 따라 다른 값",
+ k:["이프","만약","조건","~이면","참 거짓","판정","합격 불합격"],
+ f:'=IF(조건, 맞을때, 아닐때)',
+ d:"조건이 맞으면 첫 번째 값, 아니면 두 번째 값을 보여줘요.",
+ ex:{c:["이름","점수"],r:[["김하늘",85],["이바다",55]],calc:[["C2",'=IF(B2>=60,"합격","불합격")',"합격"],["C3",'=IF(B3>=60,"합격","불합격")',"불합격"]]},
+ tips:["글자는 큰따옴표로, 숫자는 그냥 써요.","조건이 3개 이상이면 IF를 겹치기보다 IFS가 읽기 쉬워요.","같다 =, 다르다 <>, 이상 >=, 이하 <="],
+ rel:["ifs","and","c_grade"]});
+P({id:"ifs",fn:"IFS",cat:"logic",title:"IFS — 조건 여러 단계",
+ k:["이프스","다중 조건","여러 조건","등급","구간"],
+ f:'=IFS(조건1, 값1, 조건2, 값2, ..., TRUE, 나머지값)',
+ d:"위에서부터 차례로 조건을 확인해서 처음 맞는 값을 보여줘요. 마지막 TRUE는 '그 외 전부'.",
+ ex:{c:["이름","점수"],r:[["김하늘",85]],calc:[["C2",'=IFS(B2>=90,"A",B2>=80,"B",TRUE,"C")',"B"]]},
+ rel:["if","switch","c_grade"]});
+P({id:"and",fn:"AND",cat:"logic",title:"AND / OR / NOT — 조건 묶기",
+ k:["앤드","오어","낫","그리고","또는","둘다","하나라도","아니면"],
+ f:"=AND(조건1, 조건2)  /  =OR(조건1, 조건2)  /  =NOT(조건)",
+ d:"AND는 모두 맞아야, OR은 하나만 맞아도 TRUE. IF 안에 넣어서 많이 써요.",
+ ex:{c:["이름","점수"],r:[["김하늘",85],["이바다",55]],calc:[["C2",'=IF(AND(B2>=60,B2<=90),"범위내","범위밖")',"범위내"],["C3","=OR(B2<60,B3<60)","TRUE"]]},rel:["if"]});
+P({id:"switch",fn:"SWITCH",cat:"logic",title:"SWITCH — 코드를 이름으로 바꾸기",
+ k:["스위치","코드 변환","치환","대응"],
+ f:'=SWITCH(값, 경우1, 결과1, 경우2, 결과2, ..., 기본값)',
+ d:"값이 어느 경우와 같은지 보고 해당 결과를 보여줘요. 코드표 변환에 편해요.",
+ ex:{c:["코드"],r:[["M"],["F"]],calc:[["B2",'=SWITCH(A2,"M","남","F","여","미상")',"남"],["B3",'=SWITCH(A3,"M","남","F","여","미상")',"여"]]},
+ tips:["경우가 많으면 별도 코드표 + XLOOKUP이 관리하기 편해요."],rel:["ifs","xlookup"]});
+P({id:"iferror",fn:"IFERROR",cat:"logic",pop:1,title:"IFERROR — 오류 대신 다른 값 보여주기",
+ k:["이프에러","오류 처리","에러 숨기기","#N/A 없애기","#DIV/0","오류 대신 0","오류 대신 빈칸"],
+ f:'=IFERROR(수식, 오류일때값)',
+ d:"수식 결과가 오류(#N/A, #DIV/0! 등)면 대신 지정한 값을 보여줘요.",
+ ex:{c:["이름","점수"],r:[["김하늘",85]],calc:[["C2",'=IFERROR(VLOOKUP("홍길동",A2:B2,2,FALSE),"없음")',"없음"],["C3","=IFERROR(10/0,0)","0"]]},
+ tips:["모든 오류를 숨기므로 진짜 실수도 가려져요. 찾기 실패만 처리하려면 IFNA가 더 안전해요."],rel:["ifna","c_na_reason"]});
+P({id:"ifna",fn:"IFNA",cat:"logic",title:"IFNA — 못 찾았을 때(#N/A)만 처리",
+ k:["이프엔에이","#N/A","못찾을때","없을때"],
+ f:'=IFNA(수식, #N/A일때값)',d:"#N/A만 바꾸고 다른 오류는 그대로 보여줘서 실수를 놓치지 않아요.",
+ ex:{c:["이름","점수"],r:[["김하늘",85]],calc:[["C2",'=IFNA(VLOOKUP("홍길동",A2:B2,2,FALSE),"없음")',"없음"]]},rel:["iferror"]});
+P({id:"isfn",fn:"ISNUMBER",cat:"logic",title:"ISNUMBER / ISTEXT / ISBLANK — 값 종류 확인",
+ k:["이즈넘버","이즈텍스트","이즈블랭크","숫자인지","텍스트인지","빈칸인지","확인"],
+ f:"=ISNUMBER(셀)  /  =ISTEXT(셀)  /  =ISBLANK(셀)",
+ d:"셀이 숫자인지, 글자인지, 비었는지 TRUE/FALSE로 알려줘요. 사번이 텍스트로 들어갔는지 확인할 때 유용해요.",
+ ex:{c:["값"],r:[[100],["가나"],[null]],calc:[["B2","=ISNUMBER(A2)","TRUE"],["B3","=ISTEXT(A3)","TRUE"],["B4","=ISBLANK(A4)","TRUE"]]},
+ rel:["c_text_number","c_contains"]});
+P({id:"let",fn:"LET",cat:"logic",title:"LET — 수식 안에 이름 붙이기",
+ k:["렛","변수","긴 수식 정리","이름 붙이기"],
+ f:"=LET(이름, 값, 계산식)",d:"수식 안에서 반복되는 부분에 이름을 붙여 짧고 읽기 쉽게 만들어요.",
+ ex:{c:["점수"],r:[[85]],calc:[["B2","=LET(x,A2*2,x+10)","180"]]}});
+
+/* ===== 날짜·시간 ===== */
+P({id:"today",fn:"TODAY",cat:"date",title:"TODAY / NOW — 오늘 날짜·지금 시각",
+ k:["투데이","나우","오늘","현재","오늘 날짜","지금"],
+ f:"=TODAY()  /  =NOW()",d:"파일을 열 때마다 오늘 날짜(시각)로 바뀌어요.",
+ tips:["날짜를 고정해서 입력하려면 Ctrl + ; (세미콜론), 시각은 Ctrl + Shift + ;","기준일이 매번 바뀌면 안 되는 서류는 TODAY 대신 날짜를 직접 입력하세요."],rel:["datedif"]});
+P({id:"date",fn:"DATE",cat:"date",title:"DATE — 연·월·일로 날짜 만들기",
+ k:["데이트","날짜 만들기","연월일 합치기"],
+ f:"=DATE(연, 월, 일)",d:"숫자 세 개를 합쳐 진짜 날짜로 만들어요. 월에 13을 넣으면 다음 해 1월로 알아서 넘어가요.",
+ ex:{c:["연","월","일"],r:[[2024,3,15]],calc:[["D2","=DATE(A2,B2,C2)","2024-03-15"]]},rel:["c_birth_from_id","year"]});
+P({id:"year",fn:"YEAR",cat:"date",title:"YEAR / MONTH / DAY — 날짜에서 연·월·일 꺼내기",
+ k:["이어","먼스","데이","연도","월","일","년도 추출","월 추출"],
+ f:"=YEAR(날짜)  /  =MONTH(날짜)  /  =DAY(날짜)",
+ d:"날짜에서 연도, 월, 일 숫자만 꺼내요.",
+ ex:{c:["입사일"],r:[["2021-07-19"]],calc:[["B2","=YEAR(A2)","2021"],["C2","=MONTH(A2)","7"],["D2","=DAY(A2)","19"]]},
+ tips:["결과가 1900-01-07처럼 날짜로 보이면 셀 서식을 '일반'으로 바꾸세요."],rel:["text_fn","c_monthly_hires"]});
+P({id:"datedif",fn:"DATEDIF",cat:"date",pop:1,title:"DATEDIF — 두 날짜 사이 년·개월·일",
+ k:["데이트디프","근속","근속연수","기간","몇년","몇개월","나이","경과"],
+ f:'=DATEDIF(시작일, 종료일, "Y")',
+ d:"두 날짜 사이가 몇 년(Y), 몇 개월(M), 며칠(D)인지 계산해요. 함수 목록에 안 나오지만 직접 입력하면 돼요.",
+ args:[['"Y"',"만 년수"],['"M"',"만 개월수"],['"D"',"일수"],['"YM"',"년을 뺀 나머지 개월"],['"MD"',"개월을 뺀 나머지 일"]],
+ ex:{c:["입사일","기준일"],r:[["2019-03-02","2024-11-04"]],calc:[["C2",'=DATEDIF(A2,B2,"Y")',"5"],["D2",'=DATEDIF(A2,B2,"YM")',"8"],["E2",'=DATEDIF(A2,B2,"MD")',"2"]]},
+ tips:["시작일이 종료일보다 늦으면 #NUM! 오류.","\"MD\"는 말일 근처에서 가끔 어긋나니 중요한 계산은 검산하세요.","회사 기준(입사일 당일 포함 등)에 따라 종료일에 +1 할지 정하세요."],
+ rel:["c_tenure","c_age"]});
+P({id:"edate",fn:"EDATE",cat:"date",title:"EDATE — 몇 개월 뒤(전) 날짜",
+ k:["이데이트","개월 후","개월 뒤","수습 종료","만료일","몇달 뒤"],
+ f:"=EDATE(시작일, 개월수)",d:"시작일에서 개월수만큼 지난 날짜. 음수면 이전 날짜.",
+ ex:{c:["입사일"],r:[["2024-03-15"]],calc:[["B2","=EDATE(A2,3)","2024-06-15"],["C2","=EDATE(A2,3)-1","2024-06-14"]]},
+ tips:["1/31에서 1개월 뒤는 2/29(윤년)처럼 말일로 맞춰져요.","결과가 숫자로 보이면 셀 서식을 날짜로 바꾸세요."],rel:["c_probation","eomonth"]});
+P({id:"eomonth",fn:"EOMONTH",cat:"date",title:"EOMONTH — 그 달 마지막 날",
+ k:["이오먼스","말일","월말","월초","마지막날","그달 첫날"],
+ f:"=EOMONTH(날짜, 개월수)",d:"날짜가 속한 달(0) 또는 몇 달 뒤의 말일을 구해요. 월초는 =EOMONTH(날짜,-1)+1.",
+ ex:{c:["기준일"],r:[["2024-03-15"]],calc:[["B2","=EOMONTH(A2,0)","2024-03-31"],["C2","=EOMONTH(A2,-1)+1","2024-03-01"],["D2","=DAY(EOMONTH(A2,0))","31"]]},
+ rel:["c_month_days","edate"]});
+P({id:"weekday",fn:"WEEKDAY",cat:"date",title:"WEEKDAY — 요일 번호",
+ k:["위크데이","요일","주말","무슨요일","토요일","일요일"],
+ f:"=WEEKDAY(날짜, 2)",d:"요일을 숫자로 돌려줘요. 두 번째 값 2를 쓰면 월=1 … 일=7이라 주말 구분(>5)이 쉬워요.",
+ ex:{c:["날짜"],r:[["2024-03-15"]],calc:[["B2","=WEEKDAY(A2,2)","5 (금요일)"],["C2",'=IF(WEEKDAY(A2,2)>5,"주말","평일")',"평일"]]},
+ rel:["c_weekday_name","networkdays"]});
+P({id:"weeknum",fn:"WEEKNUM",cat:"date",title:"WEEKNUM — 몇 주차",
+ k:["위크넘","주차","몇주차","주 번호"],
+ f:"=WEEKNUM(날짜, [시작요일])",d:"그 해의 몇 번째 주인지 알려줘요. 기본은 일요일 시작, 2를 넣으면 월요일 시작.",
+ ex:{c:["날짜"],r:[["2024-03-15"]],calc:[["B2","=WEEKNUM(A2)","11"]]},
+ tips:["ISO 기준 주차는 =ISOWEEKNUM(날짜)"]});
+P({id:"networkdays",fn:"NETWORKDAYS",cat:"date",pop:1,title:"NETWORKDAYS — 근무일수 (주말·공휴일 제외)",
+ k:["네트워크데이즈","근무일수","영업일","평일수","주말 제외","공휴일 제외","소정근로일"],
+ f:"=NETWORKDAYS(시작일, 종료일, [공휴일범위])",
+ d:"두 날짜 사이(양 끝 포함)에서 토·일과 공휴일을 뺀 일수를 세요.",
+ ex:{c:["시작","종료","공휴일"],r:[["2024-03-01","2024-03-31","2024-03-01"]],calc:[["D2","=NETWORKDAYS(A2,B2)","21"],["E2","=NETWORKDAYS(A2,B2,C2)","20"]]},
+ tips:["공휴일은 따로 목록을 만들어 범위로 넣으세요 (대체공휴일도 직접 추가).","주말이 토·일이 아니면 NETWORKDAYS.INTL."],rel:["networkdays_intl","workday","c_workdays"]});
+P({id:"networkdays_intl",fn:"NETWORKDAYS.INTL",cat:"date",title:"NETWORKDAYS.INTL — 주말 요일 직접 지정",
+ k:["네트워크데이즈인틀","일요일만 휴무","주6일","교대 근무일수","휴무 요일"],
+ f:"=NETWORKDAYS.INTL(시작일, 종료일, 주말코드, [공휴일])",
+ d:"쉬는 요일을 지정해서 근무일수를 세요. 11=일요일만 휴무, 1=토·일, 문자 \"0000011\"=월~일 중 쉬는 날을 1로.",
+ ex:{c:["시작","종료"],r:[["2024-03-01","2024-03-31"]],calc:[["C2","=NETWORKDAYS.INTL(A2,B2,11)","26"],["D2",'=NETWORKDAYS.INTL(A2,B2,"0010001")',"22"]]},
+ note:"\"0010001\" = 월화수목금토일 순서로 수요일·일요일이 휴무",rel:["networkdays"]});
+P({id:"workday",fn:"WORKDAY",cat:"date",title:"WORKDAY — 근무일 기준 n일 뒤 날짜",
+ k:["워크데이","영업일 후","근무일 뒤","처리 기한","마감일"],
+ f:"=WORKDAY(시작일, 일수, [공휴일])",d:"주말·공휴일을 건너뛰고 n번째 근무일 날짜를 구해요.",
+ ex:{c:["시작"],r:[["2024-03-01"]],calc:[["B2","=WORKDAY(A2,5)","2024-03-08"]]},rel:["networkdays"]});
+P({id:"days",fn:"DAYS",cat:"date",title:"DAYS — 두 날짜 사이 일수",
+ k:["데이즈","일수","며칠","날짜 빼기","기간 일수"],
+ f:"=DAYS(종료일, 시작일)  또는  =종료일-시작일",
+ d:"두 날짜의 차이(일)를 구해요. 시작일·종료일을 모두 세려면 +1.",
+ ex:{c:["시작","종료"],r:[["2024-03-01","2024-03-31"]],calc:[["C2","=DAYS(B2,A2)","30"],["D2","=B2-A2+1","31 (양 끝 포함)"]]},rel:["datedif","c_days_between"]});
+P({id:"time_fn",fn:"HOUR",cat:"date",title:"HOUR / MINUTE / TIME — 시간 다루기",
+ k:["아워","미닛","타임","시간","분","시각","시간 추출"],
+ f:"=HOUR(시각)  /  =MINUTE(시각)  /  =TIME(시,분,초)",
+ d:"시각에서 시·분을 꺼내거나, 숫자로 시각을 만들어요. 엑셀에서 하루=1이라 시간 차이에 24를 곱하면 '시간 수'가 돼요.",
+ ex:{c:["출근","퇴근"],r:[["09:00","18:30"]],calc:[["C2","=HOUR(B2)","18"],["D2","=MINUTE(B2)","30"],["E2","=(B2-A2)*24","9.5"]]},rel:["c_work_hours","c_time_to_num"]});
+P({id:"datevalue",fn:"DATEVALUE",cat:"date",title:"DATEVALUE — 글자로 된 날짜를 진짜 날짜로",
+ k:["데이트밸류","텍스트 날짜","날짜 변환","날짜 인식 안됨"],
+ f:'=DATEVALUE("2024-03-15")',d:"글자로 들어간 날짜를 엑셀 날짜 숫자로 바꿔요. 결과에 날짜 서식을 입히면 날짜로 보여요.",
+ ex:{c:["텍스트 날짜"],r:[["2024-03-15"]],calc:[["B2",'=DATEVALUE("2024-03-15")',"45366 (날짜 서식 적용 시 2024-03-15)"]]},
+ tips:["20240315처럼 숫자 8자리는 → '8자리 숫자를 날짜로' 항목 참고."],rel:["c_yyyymmdd"]});
+
+/* ===== 텍스트 ===== */
+P({id:"left",fn:"LEFT",cat:"text",pop:1,title:"LEFT / RIGHT / MID — 글자 일부 잘라내기",
+ k:["레프트","라이트","미드","앞글자","뒷글자","중간글자","자르기","추출","몇글자"],
+ f:"=LEFT(글자, 개수)  /  =RIGHT(글자, 개수)  /  =MID(글자, 시작위치, 개수)",
+ d:"왼쪽·오른쪽·중간에서 원하는 만큼 글자를 잘라 와요.",
+ ex:{c:["코드"],r:[["SF-2024-0815"]],calc:[["B2","=LEFT(A2,2)","SF"],["C2","=RIGHT(A2,4)","0815"],["D2","=MID(A2,4,4)","2024"]]},
+ tips:["결과는 글자예요. 숫자로 계산하려면 앞에 -- 를 붙이세요: =--MID(A2,4,4)"],rel:["textbefore","find","c_birth_from_id"]});
+P({id:"len",fn:"LEN",cat:"text",title:"LEN — 글자 수",
+ k:["렌","글자수","길이","자릿수 확인"],
+ f:"=LEN(글자)",d:"글자 수를 세요. 공백도 1글자. 사번 자릿수가 맞는지 확인할 때 좋아요.",
+ ex:{c:["코드"],r:[["SF-2024-0815"]],calc:[["B2","=LEN(A2)","12"]]},rel:["trim"]});
+P({id:"find",fn:"FIND",cat:"text",title:"FIND / SEARCH — 글자 위치 찾기",
+ k:["파인드","서치","위치","몇번째 글자","포함 여부"],
+ f:'=FIND("찾을글자", 글자)  /  =SEARCH("찾을글자", 글자)',
+ d:"찾을 글자가 몇 번째에 있는지 알려줘요. FIND는 대소문자 구분, SEARCH는 구분 안 하고 * ? 사용 가능.",
+ ex:{c:["코드"],r:[["SF-2024-0815"]],calc:[["B2",'=FIND("-",A2)',"3"],["C2",'=SEARCH("f",A2)',"2"]]},
+ tips:["없으면 #VALUE! → 포함 여부 확인은 ISNUMBER(SEARCH(...))"],rel:["c_contains","textbefore"]});
+P({id:"substitute",fn:"SUBSTITUTE",cat:"text",pop:1,title:"SUBSTITUTE — 특정 글자 바꾸기·지우기",
+ k:["서브스티튜트","바꾸기","치환","지우기","하이픈 제거","공백 제거","특정 문자 삭제"],
+ f:'=SUBSTITUTE(글자, "바꿀글자", "새글자")',
+ d:"글자 안의 특정 문자를 모두 다른 문자로 바꿔요. 새글자를 \"\"로 두면 지워져요.",
+ ex:{c:["코드"],r:[["SF-2024-0815"]],calc:[["B2",'=SUBSTITUTE(A2,"-","")',"SF20240815"],["C2",'=SUBSTITUTE(A2,"-","/")',"SF/2024/0815"]]},
+ tips:["수식 없이 한 번에 바꾸려면 Ctrl + H (바꾸기)."],rel:["replace","k_find_replace","c_clean_space"]});
+P({id:"replace",fn:"REPLACE",cat:"text",title:"REPLACE — 위치를 지정해서 바꾸기 (마스킹)",
+ k:["리플레이스","마스킹","가리기","별표","개인정보 가리기","*** 처리"],
+ f:'=REPLACE(글자, 시작위치, 개수, "새글자")',
+ d:"지정한 위치부터 몇 글자를 다른 글자로 바꿔요. 전화번호·주민번호 가운데 가리기에 써요.",
+ ex:{c:["연락처"],r:[["010-1234-5678"]],calc:[["B2",'=REPLACE(A2,5,4,"****")',"010-****-5678"]]},rel:["c_mask"]});
+P({id:"trim",fn:"TRIM",cat:"text",pop:1,title:"TRIM — 앞뒤 공백 없애기",
+ k:["트림","공백 제거","띄어쓰기 정리","스페이스 제거","빈칸 제거"],
+ f:"=TRIM(글자)",d:"앞뒤 공백을 지우고, 가운데 여러 칸 공백은 한 칸으로 줄여요. 찾기가 안 될 때 먼저 의심할 것.",
+ ex:{c:["이름"],r:[["  김 하늘  "]],calc:[["B2","=TRIM(A2)","김 하늘"]]},
+ tips:["웹·시스템에서 복사한 특수 공백(CHAR(160))은 TRIM으로 안 지워져요 → '공백 섞인 값 정리' 참고."],rel:["c_clean_space","clean"]});
+P({id:"clean",fn:"CLEAN",cat:"text",title:"CLEAN — 줄바꿈·보이지 않는 문자 지우기",
+ k:["클린","줄바꿈 제거","엔터 제거","특수문자 제거","보이지 않는 문자"],
+ f:"=CLEAN(글자)",d:"셀 안 줄바꿈(Alt+Enter) 같은 인쇄되지 않는 문자를 지워요.",
+ tips:["줄바꿈을 공백으로 바꾸려면 =SUBSTITUTE(A2,CHAR(10),\" \")"],rel:["trim","c_newline"]});
+P({id:"upper",fn:"UPPER",cat:"text",title:"UPPER / LOWER / PROPER — 대소문자",
+ k:["어퍼","로워","프로퍼","대문자","소문자","영문"],
+ f:"=UPPER(글자)  /  =LOWER(글자)  /  =PROPER(글자)",d:"영문을 대문자·소문자·첫 글자만 대문자로 바꿔요.",
+ ex:{c:["값"],r:[["sf food"]],calc:[["B2","=UPPER(A2)","SF FOOD"],["C2","=PROPER(A2)","Sf Food"]]}});
+P({id:"concat",fn:"CONCAT",cat:"text",title:"& / CONCAT — 글자 합치기",
+ k:["콘캣","앤드","합치기","붙이기","연결","이어붙이기","concatenate"],
+ f:'=A2&B2  /  =A2&" "&B2  /  =CONCAT(A2, B2)',
+ d:"여러 칸의 글자를 하나로 이어 붙여요. 가운데 공백이나 기호는 큰따옴표로 넣어요.",
+ ex:{c:["성","이름"],r:[["김","하늘"]],calc:[["C2","=A2&B2","김하늘"],["D2",'=A2&" "&B2&" 님"',"김 하늘 님"]]},
+ rel:["textjoin","c_join_id_name"]});
+P({id:"textjoin",fn:"TEXTJOIN",cat:"text",title:"TEXTJOIN — 여러 칸을 구분기호로 합치기",
+ k:["텍스트조인","쉼표로 합치기","목록 합치기","한셀에 모으기","나열"],
+ f:'=TEXTJOIN(", ", TRUE, 범위)',d:"범위의 값을 구분기호(쉼표 등)로 이어 붙여요. TRUE면 빈칸은 건너뛰어요.",
+ ex:{c:["이름"],r:[["김하늘"],["이바다"],[null],["박산"]],calc:[["B2",'=TEXTJOIN(", ",TRUE,A2:A5)',"김하늘, 이바다, 박산"]]},rel:["c_join_by_group"]});
+P({id:"text_fn",fn:"TEXT",cat:"text",pop:1,title:"TEXT — 숫자·날짜를 원하는 모양의 글자로",
+ k:["텍스트","표시형식","날짜 형식","yyyy-mm","천단위","앞에 0","요일 글자"],
+ f:'=TEXT(값, "형식")',
+ d:"숫자나 날짜를 지정한 모양의 글자로 바꿔요. 글자 합치기 할 때 날짜가 숫자로 나오는 문제를 해결해요.",
+ args:[['"yyyy-mm-dd"',"2024-03-15"],['"yyyy년 m월"',"2024년 3월"],['"aaa" / "aaaa"',"금 / 금요일"],['"#,##0"',"1,234,567"],['"000000"',"앞을 0으로 채운 6자리"]],
+ ex:{c:["날짜","금액"],r:[["2024-03-15",1234567]],calc:[["C2",'=TEXT(A2,"yyyy-mm")',"2024-03"],["D2",'=TEXT(B2,"#,##0")',"1,234,567"],["E2",'="입사일: "&TEXT(A2,"yyyy.mm.dd")',"입사일: 2024.03.15"]]},
+ tips:["결과는 글자라서 더 이상 계산에 쓰기 어려워요. 보기만 바꾸려면 셀 서식(Ctrl+1)."],rel:["k_custom_format","c_zero_pad","c_weekday_name"]});
+P({id:"value",fn:"VALUE",cat:"text",title:"VALUE — 글자로 된 숫자를 숫자로",
+ k:["밸류","숫자 변환","텍스트를 숫자로","계산 안됨"],
+ f:"=VALUE(글자)  또는  =--셀",d:"\"1,234\" 같은 글자 숫자를 진짜 숫자로 바꿔요.",
+ ex:{c:["값"],r:[["1,234"]],calc:[["B2","=VALUE(A2)","1234"]]},rel:["c_text_number"]});
+P({id:"textbefore",fn:"TEXTBEFORE",cat:"text",title:"TEXTBEFORE / TEXTAFTER — 기호 앞·뒤 글자",
+ k:["텍스트비포","텍스트애프터","앞부분","뒷부분","@ 앞","구분자 앞","아이디 추출"],
+ f:'=TEXTBEFORE(글자, "기호")  /  =TEXTAFTER(글자, "기호")',
+ d:"기호를 기준으로 앞쪽(뒤쪽) 글자를 잘라 와요. FIND+LEFT 조합보다 훨씬 쉬워요.",
+ ex:{c:["메일"],r:[["hong@sf.com"]],calc:[["B2",'=TEXTBEFORE(A2,"@")',"hong"],["C2",'=TEXTAFTER(A2,"@")',"sf.com"]]},
+ tips:["기호가 여러 번 나오면 세 번째 값으로 몇 번째인지 지정: =TEXTAFTER(A2,\"-\",2)"],rel:["textsplit","left"]});
+P({id:"textsplit",fn:"TEXTSPLIT",cat:"text",title:"TEXTSPLIT — 기호로 나눠 여러 칸에 펼치기",
+ k:["텍스트스플릿","나누기","분리","쪼개기","쉼표로 나누기"],
+ f:'=TEXTSPLIT(글자, "가로구분", ["세로구분"])',d:"한 칸의 글자를 기호 기준으로 나눠 여러 칸에 펼쳐요.",
+ ex:{c:["값"],r:[["영업,인사,생산"]],calc:[["B2",'=TEXTSPLIT(A2,",")',"영업 | 인사 | 생산 (옆으로 3칸)","s"]]},rel:["k_text_to_columns","textbefore"]});
+P({id:"exact",fn:"EXACT",cat:"text",title:"EXACT — 완전히 똑같은지 (대소문자까지)",
+ k:["이그잭트","같은지","일치 여부","똑같은지"],
+ f:"=EXACT(글자1, 글자2)",d:"두 글자가 대소문자까지 똑같으면 TRUE. 그냥 =A2=B2 는 대소문자를 구분하지 않아요.",
+ ex:{c:["값1","값2"],r:[["A1","a1"]],calc:[["C2","=EXACT(A2,B2)","FALSE"],["D2","=A2=B2","TRUE"]]}});
+P({id:"numberstring",fn:"NUMBERSTRING",cat:"text",title:"NUMBERSTRING — 금액을 한글로 (일만이천…)",
+ k:["넘버스트링","한글 금액","금액 한글","숫자를 한글로","영수증 금액"],
+ f:"=NUMBERSTRING(숫자, 1)",d:"숫자를 한글로 읽은 글자로 바꿔요. 한국어 엑셀 전용이라 함수 목록엔 안 나오지만 입력하면 돼요.",
+ ex:{c:["금액"],r:[[12345]],calc:[["B2","=NUMBERSTRING(A2,1)","일만이천삼백사십오","n"],["C2",'="금 "&NUMBERSTRING(A2,1)&"원정"',"금 일만이천삼백사십오원정","n"]]},
+ tips:["셀 서식 사용자 지정 [DBNum4]G/표준 으로도 한글 표시가 돼요."]});
+
+/* ===== 필터·정렬(365 동적 배열) ===== */
+P({id:"filter",fn:"FILTER",cat:"dyn",pop:1,title:"FILTER — 조건 맞는 행만 뽑아오기",
+ k:["필터","조건 추출","골라오기","해당 행 가져오기","여러개 찾기","모두 찾기"],
+ f:'=FILTER(범위, 조건, [없을때])',
+ d:"조건에 맞는 행 전체를 뽑아서 펼쳐 보여줘요. 원본이 바뀌면 자동으로 다시 계산돼요. XLOOKUP과 달리 여러 개 모두 가져와요.",
+ args:[["범위","가져올 표 (머리글 제외)"],["조건","예: B2:B5=\"영업\""],["없을때","하나도 없을 때 보여줄 값 (생략하면 #CALC!)"]],
+ ex:ex(DEPT,[["E2",'=FILTER(A2:C5,B2:B5="영업","없음")',"김하늘·박산 두 줄이 펼쳐짐","s"],["E5",'=FILTER(A2:A5,(B2:B5="영업")*(C2:C5>=290))',"김하늘","s"]]),
+ tips:["조건 두 개 모두(그리고) = (조건1)*(조건2), 하나라도(또는) = (조건1)+(조건2).","펼쳐질 자리에 다른 값이 있으면 #SPILL!"],
+ rel:["c_filter_rows","sort","unique","c_spill"]});
+P({id:"unique",fn:"UNIQUE",cat:"dyn",pop:1,title:"UNIQUE — 중복 없는 목록",
+ k:["유니크","중복 제거","고유값","중복없이","목록 만들기","한번씩만"],
+ f:"=UNIQUE(범위)",d:"범위에서 중복을 뺀 목록을 펼쳐 보여줘요. 원본은 그대로.",
+ ex:ex(DEPT,[["E2","=UNIQUE(B2:B5)","영업 / 인사 / 생산 (아래로 3칸)","s"],["F2","=COUNTA(UNIQUE(B2:B5))","3"]]),
+ tips:["정렬까지 하려면 =SORT(UNIQUE(B2:B5))","원본 자체에서 중복을 지우려면 '중복된 항목 제거' 기능."],rel:["c_unique_count","k_remove_dup","sort"]});
+P({id:"sort",fn:"SORT",cat:"dyn",title:"SORT — 정렬된 결과 펼치기",
+ k:["소트","정렬","오름차순","내림차순","순서대로"],
+ f:"=SORT(범위, [기준열번호], [1 또는 -1])",d:"원본은 그대로 두고 정렬된 결과를 옆에 보여줘요. 1=오름차순, -1=내림차순.",
+ ex:ex(DEPT,[["E2","=SORT(A2:C5,3,-1)","급여 높은 순: 이바다·최들·김하늘·박산","s"]]),rel:["sortby","k_sort","c_top_n"]});
+P({id:"sortby",fn:"SORTBY",cat:"dyn",title:"SORTBY — 다른 열 기준으로 정렬",
+ k:["소트바이","기준 정렬","다중 정렬","정렬 기준"],
+ f:"=SORTBY(범위, 기준범위1, 순서1, [기준범위2, 순서2])",d:"보여줄 열과 정렬 기준 열이 다를 때, 또는 기준이 여러 개일 때 써요.",
+ ex:ex(DEPT,[["E2","=SORTBY(A2:A5,C2:C5,-1)","이바다 / 최들 / 김하늘 / 박산","s"]]),rel:["sort"]});
+P({id:"sequence",fn:"SEQUENCE",cat:"dyn",title:"SEQUENCE — 연속 번호 자동",
+ k:["시퀀스","일련번호","연번","1부터","번호 매기기","날짜 나열"],
+ f:"=SEQUENCE(행수, [열수], [시작], [간격])",d:"1, 2, 3… 같은 연속 숫자를 한 번에 만들어요.",
+ ex:{c:["번호"],r:[],calc:[["A2","=SEQUENCE(5)","1~5 (아래로 5칸)","s"],["B2","=SEQUENCE(COUNTA(C:C)-1)","C열 인원수만큼 번호","s"]]},
+ tips:["날짜 나열: =SEQUENCE(31,1,DATE(2024,3,1)) 후 날짜 서식."],rel:["c_serial"]});
+P({id:"vstack",fn:"VSTACK",cat:"dyn",title:"VSTACK / HSTACK — 여러 표 이어 붙이기",
+ k:["브이스택","에이치스택","표 합치기","시트 합치기","위아래로 합치기","옆으로 합치기","취합"],
+ f:"=VSTACK(범위1, 범위2, ...)  /  =HSTACK(범위1, 범위2)",d:"여러 범위를 위아래(옆으로) 이어 붙여 하나의 표로 보여줘요. 월별 시트 취합에 좋아요.",
+ ex:{c:["이름"],r:[],calc:[["A2","=VSTACK('1월'!A2:C50,'2월'!A2:C50)","두 시트가 위아래로 합쳐짐","s"]]},
+ tips:["빈 줄까지 포함되면 FILTER로 걸러요: =FILTER(VSTACK(...),VSTACK(...첫열...)<>\"\")"],rel:["c_merge_sheets"]});
+P({id:"groupby",fn:"GROUPBY",cat:"dyn",title:"GROUPBY — 수식으로 그룹별 요약 (최신 365)",
+ k:["그룹바이","그룹별","부서별 집계","요약표","피벗 수식","pivotby"],
+ f:"=GROUPBY(그룹열, 값열, SUM)",d:"피벗 테이블처럼 그룹별 합계표를 수식 하나로 만들어요. 원본이 바뀌면 자동 갱신.",
+ ex:ex(DEPT,[["E2","=GROUPBY(B2:B5,C2:C5,SUM)","생산 310 / 영업 580 / 인사 320 / 합계 1,210","s"]]),
+ tips:["최근 업데이트된 365에만 있어요. #NAME? 이 나오면 버전이 지원 안 하는 것 → 피벗 테이블이나 SUMIF를 쓰세요.","월×부서 교차표는 PIVOTBY."],rel:["k_pivot","c_sum_by_dept"]});
+})();
+
+(function(){
+var P = function(o){ o.t="c"; window.EXCEL_DATA.push(o); };
+var EMP = {c:["사번","이름","부서"], r:[[1001,"김하늘","영업"],[1002,"이바다","인사"],[1003,"박산","생산"]]};
+var DEPT = {c:["이름","부서","급여"], r:[["김하늘","영업",300],["이바다","인사",320],["박산","영업",280],["최들","생산",310]]};
+
+/* ===== 찾기 ===== */
+P({id:"c_find_name",cat:"lookup",pop:1,title:"사번으로 이름(부서·급여) 찾아오기",
+ k:["사번 이름","사번으로","이름 가져오기","다른 표에서 가져오기","매칭","대조","명단 붙이기","vlookup"],
+ f:'=XLOOKUP(찾을사번, 명단!사번열, 명단!이름열, "없음")',
+ d:"다른 표(시트)에 있는 사번 명단에서 이름·부서 등을 가져와요.",
+ ex:{c:["사번","이름","부서","","찾을 사번"],r:[[1001,"김하늘","영업",null,1003],[1002,"이바다","인사",null,1005],[1003,"박산","생산",null,null]],
+   calc:[["F2",'=XLOOKUP(E2,$A$2:$A$4,$B$2:$B$4,"없음")',"박산"],["F3",'=XLOOKUP(E3,$A$2:$A$4,$B$2:$B$4,"없음")',"없음"],["G2",'=XLOOKUP(E2,$A$2:$A$4,$B$2:$C$4)',"박산 | 생산 (두 칸에 펼쳐짐)","s"]]},
+ tips:["범위는 $로 고정해야 아래로 복사해도 안 밀려요.","가져올범위를 여러 열(B:C)로 주면 한 번에 여러 칸을 가져와요.","못 찾으면 → 사번이 숫자/텍스트로 섞였는지, 공백이 있는지 먼저 확인."],
+ rel:["xlookup","c_text_number","c_clean_space","c_na_reason"]});
+P({id:"c_lookup_multi",cat:"lookup",title:"조건 두 개로 찾기 (사번 + 월)",
+ k:["두 조건","여러 조건 찾기","다중 조건 조회","사번과 월","2개 조건 vlookup"],
+ f:"=XLOOKUP(1, (사번열=사번)*(월열=월), 가져올열)",
+ d:"사번과 월이 둘 다 맞는 줄을 찾아요. 조건을 곱해서(*) '둘 다 맞으면 1'을 만드는 방식이에요.",
+ ex:{c:["사번","월","지급액"],r:[[1001,"1월",300],[1001,"2월",310],[1002,"1월",280]],
+   calc:[["E2",'=XLOOKUP(1,(A2:A4=1001)*(B2:B4="2월"),C2:C4,"없음")',"310"]]},
+ tips:["조건이 맞는 줄이 여러 개면 첫 번째만 가져와요. 합계를 원하면 SUMIFS."],rel:["xlookup","sumifs"]});
+P({id:"c_left_lookup",cat:"lookup",title:"찾을 열보다 왼쪽 값 가져오기",
+ k:["왼쪽 찾기","역방향","vlookup 왼쪽","index match","인덱스 매치"],
+ f:"=XLOOKUP(값, 오른쪽열, 왼쪽열)  또는  =INDEX(왼쪽열, MATCH(값, 오른쪽열, 0))",
+ d:"VLOOKUP은 왼쪽을 못 가져와요. XLOOKUP이나 INDEX+MATCH를 쓰면 방향 상관없어요.",
+ ex:{c:["사번","이름","부서"],r:EMP.r,calc:[["E2",'=XLOOKUP("박산",B2:B4,A2:A4)',"1003"],["E3",'=INDEX(A2:A4,MATCH("박산",B2:B4,0))',"1003"]]},
+ rel:["xlookup","index","match"]});
+P({id:"c_last_value",cat:"lookup",title:"마지막(가장 최근) 값 찾기",
+ k:["마지막 값","최근 값","최신","가장 아래","마지막 기록","최종"],
+ f:"=XLOOKUP(찾을값, 찾을범위, 가져올범위, , 0, -1)",
+ d:"같은 사번이 여러 줄 있을 때 맨 아래(가장 최근) 줄 값을 가져와요. 마지막 -1이 '아래에서부터 찾기'.",
+ ex:{c:["사번","발령일","부서"],r:[[1001,"2022-01-01","영업"],[1001,"2024-03-01","인사"],[1002,"2023-05-01","생산"]],
+   calc:[["E2",'=XLOOKUP(1001,A2:A4,C2:C4,,0,-1)',"인사"]]},
+ tips:["표가 날짜순으로 정렬되어 있어야 '마지막=최근'이 맞아요."],rel:["xlookup","maxifs"]});
+P({id:"c_sheet_by_name",cat:"lookup",title:"셀에 적힌 시트 이름으로 다른 시트 값 가져오기",
+ k:["시트 이름","시트명 참조","월별 시트","시트 선택","동적 시트"],
+ f:"=INDIRECT(\"'\"&A1&\"'!B2\")",
+ d:"A1에 '3월'처럼 시트 이름을 적어두면 그 시트의 B2 값을 가져와요. 월별 시트 요약에 써요.",
+ tips:["작은따옴표는 시트 이름에 공백이 있어도 되게 해줘요.","시트 이름이 정확히 같아야 해요 (띄어쓰기 포함)."],rel:["indirect"]});
+P({id:"c_band_lookup",cat:"lookup",title:"구간표에서 해당 값 찾기 (근속 구간 → 수당)",
+ k:["구간","구간별","등급표","범위 찾기","근속 수당","요율표","근사값","이상 미만"],
+ f:"=XLOOKUP(값, 구간시작열, 결과열, , -1)",
+ d:"구간의 시작값만 적은 표에서, 값이 속하는 구간의 결과를 가져와요. -1 = '같거나 바로 작은 값'.",
+ ex:{c:["근속(년) 이상","수당","","근속"],r:[[0,0,null,7],[3,50000,null,2],[5,100000,null,null],[10,200000,null,null]],
+   calc:[["E2","=XLOOKUP(D2,$A$2:$A$5,$B$2:$B$5,,-1)","100,000"],["E3","=XLOOKUP(D3,$A$2:$A$5,$B$2:$B$5,,-1)","0"]]},
+ tips:["구간 시작값은 작은 것부터 위에서 아래로.","VLOOKUP으로 하려면 마지막을 TRUE로: =VLOOKUP(D2,A2:B5,2,TRUE)"],rel:["xlookup","c_grade"]});
+
+/* ===== 비교·중복 ===== */
+P({id:"c_list_diff",cat:"compare",pop:1,title:"두 명단 비교 — 한쪽에만 있는 사람 찾기",
+ k:["명단 비교","누락자","빠진 사람","없는 사람","차이","대조","두 표 비교","입퇴사자 확인"],
+ f:'=IF(COUNTIF(비교명단, 사번)=0, "없음", "")',
+ d:"A명단의 각 사번이 B명단에 있는지 COUNTIF로 세서 0이면 '없음' 표시. 365라면 FILTER로 목록을 바로 뽑을 수도 있어요.",
+ ex:{c:["이번달","지난달"],r:[[1001,1001],[1002,1003],[1003,1004],[1005,null]],
+   calc:[["C2",'=IF(COUNTIF($B$2:$B$5,A2)=0,"신규","")',"(빈칸)"],["C3",'=IF(COUNTIF($B$2:$B$5,A3)=0,"신규","")',"신규"],["E2","=FILTER(A2:A5,COUNTIF(B2:B5,A2:A5)=0)","1002 / 1005","s"],["F2",'=FILTER(B2:B4,COUNTIF(A2:A5,B2:B4)=0)',"1004 (이번달에 없음=퇴사?)","s"]]},
+ tips:["양방향 모두 확인해야 해요 (신규 / 빠진 사람).","사번 형식(숫자/텍스트)이 두 명단에서 같아야 해요."],rel:["c_list_both","countif","filter","k_cond_dup"]});
+P({id:"c_list_both",cat:"compare",title:"두 명단에 모두 있는 사람",
+ k:["공통","교집합","둘 다 있는","겹치는 사람","양쪽"],
+ f:"=FILTER(A명단, COUNTIF(B명단, A명단)>0)",d:"두 명단에 모두 있는 값만 뽑아요.",
+ ex:{c:["이번달","지난달"],r:[[1001,1001],[1002,1003],[1003,1004]],calc:[["D2","=FILTER(A2:A4,COUNTIF(B2:B4,A2:A4)>0)","1001 / 1003","s"]]},rel:["c_list_diff"]});
+P({id:"c_diff_two",cat:"compare",pop:1,title:"두 표 금액 차이 찾기 (전월 vs 당월, 고지서 vs 대장)",
+ k:["차액","금액 비교","전월 대비","차이 찾기","대사","검증","고지서","급여대장 비교","맞는지 확인"],
+ f:"=XLOOKUP(사번, 다른표!사번열, 다른표!금액열, 0) - 이쪽금액",
+ d:"사번으로 다른 표의 금액을 가져와 빼면 차액이 나와요. 0이 아닌 것만 필터하면 확인할 대상만 남아요.",
+ ex:{c:["사번","당월","","사번","전월"],r:[[1001,300,null,1001,300],[1002,320,null,1002,310],[1003,280,null,1004,290]],
+   calc:[["F2","=B2-XLOOKUP(A2,$D$2:$D$4,$E$2:$E$4,0)","0"],["F3","=B3-XLOOKUP(A3,$D$2:$D$4,$E$2:$E$4,0)","10"],["F4","=B4-XLOOKUP(A4,$D$2:$D$4,$E$2:$E$4,0)","280 (전월에 없음)"]]},
+ tips:["차액 열에 필터 → '0' 체크 해제하면 차이 있는 사람만 보여요.","한쪽에만 있는 사람은 0으로 가져와져서 금액 전체가 차액으로 나와요 → 명단 비교도 같이 하세요."],
+ rel:["c_list_diff","c_growth","abs"]});
+P({id:"c_dup_mark",cat:"compare",pop:1,title:"중복된 값 표시하기",
+ k:["중복 확인","중복 체크","중복 찾기","겹치는 값","두번 이상","중복 표시"],
+ f:'=IF(COUNTIF($A$2:$A$100, A2)>1, "중복", "")',
+ d:"같은 값이 범위에 2번 이상 있으면 '중복'이라고 표시해요. 색으로 보려면 조건부 서식.",
+ ex:{c:["사번"],r:[[1001],[1002],[1001],[1003]],calc:[["B2",'=IF(COUNTIF($A$2:$A$5,A2)>1,"중복","")',"중복"],["B3",'=IF(COUNTIF($A$2:$A$5,A3)>1,"중복","")',"(빈칸)"]]},
+ rel:["k_cond_dup","c_dup_nth","k_remove_dup","unique"]});
+P({id:"c_dup_nth",cat:"compare",title:"몇 번째 중복인지 (첫 번째만 남기기)",
+ k:["몇번째 중복","첫번째만","중복 순번","두번째부터"],
+ f:"=COUNTIF($A$2:A2, A2)",d:"위에서부터 그 값이 몇 번째 나왔는지 세요. 1이면 처음, 2 이상이면 중복.",
+ ex:{c:["사번"],r:[[1001],[1002],[1001],[1003]],calc:[["B2","=COUNTIF($A$2:A2,A2)","1"],["B4","=COUNTIF($A$2:A4,A4)","2"]]},
+ tips:["앞쪽만 $로 고정($A$2:A2)하는 게 핵심 — 아래로 복사하면 범위가 늘어나요."],rel:["c_dup_mark","c_absolute_ref"]});
+P({id:"c_unique_count",cat:"compare",title:"중복 빼고 몇 명(몇 개)인지 세기",
+ k:["고유 개수","중복 제외 개수","실인원","순인원","몇명인지","유니크 카운트"],
+ f:"=COUNTA(UNIQUE(범위))",d:"같은 사람이 여러 줄 있어도 한 번만 세요.",
+ ex:{c:["사번"],r:[[1001],[1002],[1001],[1003]],calc:[["C2","=COUNTA(UNIQUE(A2:A5))","3"]]},
+ tips:["빈칸이 섞여 있으면 빈칸도 1개로 세요 → =COUNTA(UNIQUE(FILTER(A2:A100,A2:A100<>\"\")))"],rel:["unique"]});
+
+/* ===== 합계·개수 상황 ===== */
+P({id:"c_sum_by_dept",cat:"sum",pop:1,title:"부서별(항목별) 합계 표 만들기",
+ k:["부서별 합계","항목별 합계","그룹별 합계","소계","집계","팀별","파트별","요약"],
+ f:"=SUMIF(부서열, 부서명, 금액열)",
+ d:"부서 목록을 UNIQUE로 만들고 옆에 SUMIF를 쓰면 부서별 합계표가 돼요. 크게 보려면 피벗 테이블.",
+ ex:{c:["이름","부서","급여"],r:DEPT.r,calc:[["E2","=UNIQUE(B2:B5)","영업 / 인사 / 생산","s"],["F2","=SUMIF($B$2:$B$5,E2,$C$2:$C$5)","580 (영업)"]]},
+ rel:["sumif","unique","k_pivot","groupby"]});
+P({id:"c_sum_period",cat:"sum",title:"기간 안의 합계 (날짜 범위)",
+ k:["기간 합계","날짜 범위 합계","몇월부터 몇월","기간별","특정 기간","구간 합계"],
+ f:'=SUMIFS(금액열, 날짜열, ">="&시작일, 날짜열, "<="&종료일)',
+ d:"날짜가 시작일~종료일 사이인 줄만 더해요. 부등호는 따옴표, 셀은 &로 이어요.",
+ ex:{c:["지급일","금액","","시작","종료"],r:[["2024-01-25",100,null,"2024-02-01","2024-03-31"],["2024-02-25",120,null,null,null],["2024-03-25",130,null,null,null],["2024-04-25",140,null,null,null]],
+   calc:[["F2",'=SUMIFS(B2:B5,A2:A5,">="&D2,A2:A5,"<="&E2)',"250"]]},rel:["sumifs","c_sum_month"]});
+P({id:"c_sum_month",cat:"sum",title:"월별 합계",
+ k:["월별 합계","월 합계","달별","월별 집계","월단위"],
+ f:'=SUMIFS(금액열, 날짜열, ">="&월초, 날짜열, "<="&EOMONTH(월초,0))',
+ d:"월초 날짜(예: 2024-02-01)를 기준으로 그 달 말일까지 더해요.",
+ ex:{c:["지급일","금액","","월초"],r:[["2024-01-25",100,null,"2024-02-01"],["2024-02-10",120,null,null],["2024-02-25",130,null,null]],
+   calc:[["E2",'=SUMIFS(B2:B4,A2:A4,">="&D2,A2:A4,"<="&EOMONTH(D2,0))',"250"]]},
+ tips:["날짜 옆에 =TEXT(A2,\"yyyy-mm\") 도우미 열을 만들어 SUMIF로 더해도 돼요."],rel:["c_sum_period","eomonth","k_pivot"]});
+P({id:"c_monthly_hires",cat:"sum",title:"월별 입사자(퇴사자) 수 세기",
+ k:["월별 입사자","입사자 수","퇴사자 수","당월 입사","월별 인원","신규 인원"],
+ f:'=COUNTIFS(입사일열, ">="&월초, 입사일열, "<="&EOMONTH(월초,0))',
+ d:"입사일이 그 달 안에 있는 사람 수를 세요. 근무형태 같은 조건을 더 붙일 수 있어요.",
+ ex:{c:["입사일","근무형태","","월초"],r:[["2024-03-04","풀",null,"2024-03-01"],["2024-03-18","단시간",null,null],["2024-04-01","풀",null,null]],
+   calc:[["E2",'=COUNTIFS(A2:A4,">="&D2,A2:A4,"<="&EOMONTH(D2,0))',"2"],["F2",'=COUNTIFS(A2:A4,">="&D2,A2:A4,"<="&EOMONTH(D2,0),B2:B4,"풀")',"1"]]},
+ rel:["countifs","c_sum_month"]});
+P({id:"c_count_contains",cat:"sum",title:"특정 글자가 들어간 칸 세기",
+ k:["포함 개수","글자 포함","~가 들어간","와일드카드","부분 일치 개수","팀 이름 포함"],
+ f:'=COUNTIF(범위, "*글자*")',d:"* 는 '아무 글자'라는 뜻. 앞뒤에 붙이면 '포함'이 돼요.",
+ ex:{c:["부서"],r:[["영업1팀"],["영업2팀"],["인사팀"]],calc:[["B2",'=COUNTIF(A2:A4,"*영업*")',"2"],["B3",'=COUNTIF(A2:A4,"*팀")',"3"]]},
+ tips:["셀 값으로 하려면 \"*\"&D1&\"*\""],rel:["countif","c_contains"]});
+P({id:"c_count_nonblank",cat:"sum",title:"입력된 칸 / 빈칸 개수",
+ k:["빈칸 세기","입력된 개수","미입력","누락 확인","빈칸 확인"],
+ f:"=COUNTA(범위)  /  =COUNTBLANK(범위)",d:"값이 있는 칸, 빈 칸을 세서 누락을 확인해요.",
+ ex:{c:["제출"],r:[["O"],[null],["O"],[null]],calc:[["B2","=COUNTA(A2:A5)","2"],["B3","=COUNTBLANK(A2:A5)","2"]]},rel:["count","k_goto_blank"]});
+P({id:"c_filter_sum",cat:"sum",title:"필터한 것만 합계 내기",
+ k:["필터 합계","보이는 것만 합계","필터 후 합계","숨긴 행 제외 합계"],
+ f:"=SUBTOTAL(109, 범위)",d:"SUM은 숨긴 행도 더해요. 필터 결과만 더하려면 SUBTOTAL(109).",
+ tips:["화면 아래 상태 표시줄에도 선택 영역의 합계·개수가 보여요 (보이는 셀 기준)."],rel:["subtotal"]});
+P({id:"c_cumulative",cat:"sum",title:"누계 (위에서부터 계속 더하기)",
+ k:["누계","누적","누적합","누적 합계","러닝토탈"],
+ f:"=SUM($B$2:B2)",d:"시작만 고정하고 아래로 복사하면 범위가 늘어나서 누계가 돼요.",
+ ex:{c:["월","금액"],r:[["1월",100],["2월",120],["3월",130]],calc:[["C2","=SUM($B$2:B2)","100"],["C4","=SUM($B$2:B4)","350"]]},rel:["c_absolute_ref"]});
+P({id:"c_growth",cat:"num",title:"증감·증감률 (전월 대비 %)",
+ k:["증감률","증가율","전월대비","전년대비","%","퍼센트","변동률"],
+ f:"=(당월-전월)/전월",d:"결과에 % 서식(Ctrl+Shift+5)을 입혀요. 전월이 0이면 오류라 IFERROR로 감싸요.",
+ ex:{c:["전월","당월"],r:[[200,230]],calc:[["C2","=B2-A2","30"],["D2","=IFERROR((B2-A2)/A2,\"-\")","0.15 (15%)"]]},rel:["c_ratio","iferror"]});
+P({id:"c_ratio",cat:"num",title:"구성비 (전체 중 몇 %)",
+ k:["구성비","비율","비중","점유율","퍼센트","%"],
+ f:"=값/SUM($범위$)",d:"합계 범위는 $로 고정하고 아래로 복사해요.",
+ ex:{c:["부서","인원"],r:[["영업",30],["인사",10],["생산",60]],calc:[["C2","=B2/SUM($B$2:$B$4)","0.3 (30%)"]]},rel:["c_growth"]});
+P({id:"c_top_n",cat:"dyn",title:"상위(하위) N명 뽑기",
+ k:["상위","top","탑","상위 3명","베스트","하위","순위표"],
+ f:"=TAKE(SORT(범위, 기준열, -1), N)",d:"정렬한 뒤 위에서 N줄만 잘라요.",
+ ex:{c:["이름","부서","급여"],r:DEPT.r,calc:[["E2","=TAKE(SORT(A2:C5,3,-1),2)","이바다 320 / 최들 310","s"]]},rel:["sort","take","large"]});
+P({id:"c_rank_group",cat:"num",title:"부서(그룹) 안에서 순위",
+ k:["그룹별 순위","부서별 순위","팀내 순위","조건 순위"],
+ f:'=COUNTIFS(그룹열, 그룹, 값열, ">"&값)+1',
+ d:"같은 부서 안에서 나보다 큰 값이 몇 개인지 +1 하면 순위예요.",
+ ex:{c:["이름","부서","실적"],r:[["김하늘","영업",90],["이바다","영업",95],["박산","인사",80]],
+   calc:[["D2",'=COUNTIFS($B$2:$B$4,B2,$C$2:$C$4,">"&C2)+1',"2"],["D4",'=COUNTIFS($B$2:$B$4,B4,$C$2:$C$4,">"&C4)+1',"1"]]},rel:["rank","countifs"]});
+P({id:"c_grade",cat:"logic",title:"점수(금액)에 따라 등급 매기기",
+ k:["등급","평가 등급","구간 판정","점수별","abc"],
+ f:'=IFS(점수>=90,"S", 점수>=80,"A", 점수>=70,"B", TRUE,"C")',
+ d:"위에서부터 큰 기준을 먼저 써요. 구간이 많거나 자주 바뀌면 구간표 + XLOOKUP이 좋아요.",
+ ex:{c:["이름","점수"],r:[["김하늘",92],["이바다",75]],calc:[["C2",'=IFS(B2>=90,"S",B2>=80,"A",B2>=70,"B",TRUE,"C")',"S"],["C3",'=IFS(B3>=90,"S",B3>=80,"A",B3>=70,"B",TRUE,"C")',"B"]]},rel:["ifs","c_band_lookup"]});
+P({id:"c_contains",cat:"logic",title:"특정 글자가 들어 있는지 확인",
+ k:["포함 여부","들어있는지","포함하면","글자 포함","부분 일치"],
+ f:'=IF(ISNUMBER(SEARCH("글자", 셀)), "포함", "")',
+ d:"SEARCH가 위치를 찾으면 숫자, 못 찾으면 오류 → ISNUMBER로 TRUE/FALSE.",
+ ex:{c:["부서"],r:[["영업1팀"],["인사팀"]],calc:[["B2",'=IF(ISNUMBER(SEARCH("영업",A2)),"영업","기타")',"영업"],["B3",'=IF(ISNUMBER(SEARCH("영업",A3)),"영업","기타")',"기타"]]},rel:["find","c_count_contains"]});
+
+/* ===== 날짜 ===== */
+P({id:"c_tenure",cat:"date",pop:1,title:"입사일로 근속연수 (○년 ○개월)",
+ k:["근속","근속연수","근속기간","재직기간","몇년차","근무기간","연차"],
+ f:'=DATEDIF(입사일, 기준일, "Y")&"년 "&DATEDIF(입사일, 기준일, "YM")&"개월"',
+ d:"DATEDIF로 만 년수와 나머지 개월을 구해 글자로 합쳐요.",
+ ex:{c:["입사일","기준일"],r:[["2019-03-02","2024-11-04"]],
+   calc:[["C2",'=DATEDIF(A2,B2,"Y")&"년 "&DATEDIF(A2,B2,"YM")&"개월"',"5년 8개월"],["D2",'=DATEDIF(A2,B2,"Y")+1&"년차"',"6년차"],["E2",'=ROUND(DATEDIF(A2,B2,"M")/12,2)',"5.67"]]},
+ tips:["오늘 기준이면 기준일 대신 TODAY().","회사 규정상 퇴사일 당일 포함이면 기준일+1 로 계산하세요."],rel:["datedif","c_age"]});
+P({id:"c_age",cat:"date",title:"만 나이 계산",
+ k:["만나이","나이","연령","생년월일로 나이"],
+ f:'=DATEDIF(생년월일, 기준일, "Y")',d:"생일이 지났는지까지 반영한 만 나이예요.",
+ ex:{c:["생년월일","기준일"],r:[["1990-11-05","2024-11-04"]],calc:[["C2",'=DATEDIF(A2,B2,"Y")',"33"]]},rel:["datedif","c_birth_from_id"]});
+P({id:"c_birth_from_id",cat:"date",title:"주민번호 앞자리로 생년월일·성별",
+ k:["주민번호","주민등록번호","생년월일 추출","성별 구분","남녀","주민번호 성별"],
+ f:'=DATE(IF(MID(번호,8,1)<="2",1900,2000)+LEFT(번호,2), MID(번호,3,2), MID(번호,5,2))',
+ d:"'901105-1******' 형식에서 뒷자리 첫 숫자(1·2 → 1900년대, 3·4 → 2000년대)로 연도를 정하고 날짜를 만들어요.",
+ ex:{c:["번호(가상)"],r:[["901105-1******"],["020315-4******"]],
+   calc:[["B2",'=DATE(IF(MID(A2,8,1)<="2",1900,2000)+LEFT(A2,2),MID(A2,3,2),MID(A2,5,2))',"1990-11-05"],["B3",'=DATE(IF(MID(A3,8,1)<="2",1900,2000)+LEFT(A3,2),MID(A3,3,2),MID(A3,5,2))',"2002-03-15"],["C2",'=IF(MOD(MID(A2,8,1),2)=1,"남","여")',"남"]]},
+ tips:["주민번호 전체를 엑셀에 둘 필요가 있는지 먼저 확인하세요 — 필요한 열만 만들고 원본은 마스킹 권장.","1800년대(9·0)와 외국인 번호(5~8)는 이 수식에 없어요."],rel:["left","c_mask","date"]});
+P({id:"c_probation",cat:"date",title:"수습 종료일·계약 만료일",
+ k:["수습","수습기간","수습 종료","계약 만료","만료일","3개월 후"],
+ f:"=EDATE(입사일, 개월수)-1",d:"입사일에서 개월수 뒤의 전날이 종료일이에요 (3/15 입사 → 6/14 종료).",
+ ex:{c:["입사일"],r:[["2024-03-15"]],calc:[["B2","=EDATE(A2,3)-1","2024-06-14"],["C2","=EDATE(A2,12)-1","2025-03-14"]]},rel:["edate"]});
+P({id:"c_month_days",cat:"date",title:"그 달이 며칠까지 있는지 (월 일수)",
+ k:["월 일수","해당월 일수","며칠까지","말일 숫자","28일 29일 30일 31일"],
+ f:"=DAY(EOMONTH(날짜, 0))",d:"그 달 말일의 '일'을 꺼내면 일수예요. 일할 계산에 써요.",
+ ex:{c:["날짜"],r:[["2024-02-10"]],calc:[["B2","=DAY(EOMONTH(A2,0))","29"]]},rel:["eomonth","c_prorate"]});
+P({id:"c_prorate",cat:"num",pop:1,title:"일할 계산 (월급 ÷ 월 일수 × 근무일)",
+ k:["일할","일할계산","중도입사","중도퇴사","일수 계산","일급","월할"],
+ f:"=ROUNDDOWN(월급 / DAY(EOMONTH(기준월,0)) * 근무일수, -1)",
+ d:"해당 월 달력 일수로 나눠 근무일수를 곱하고, 원 단위는 회사 기준대로 절사해요.",
+ ex:{c:["월급","입사일"],r:[[3000000,"2024-04-11"]],
+   calc:[["C2","=EOMONTH(B2,0)-B2+1","20 (근무일수)"],["D2","=ROUNDDOWN(A2/DAY(EOMONTH(B2,0))*(EOMONTH(B2,0)-B2+1),-1)","2,000,000"]]},
+ tips:["분모를 달력일수로 할지 소정근로일로 할지는 회사 규정에 맞추세요.","절사 단위(1원·10원)도 규정 확인."],rel:["c_month_days","c_won_cut","networkdays"]});
+P({id:"c_workdays",cat:"date",title:"기간 중 근무일수 (주말·공휴일 빼고)",
+ k:["근무일수","영업일수","평일 수","출근일수","소정근로일"],
+ f:"=NETWORKDAYS(시작일, 종료일, 공휴일목록)",
+ d:"공휴일 목록을 다른 시트에 만들어 두고 범위로 넣어요.",rel:["networkdays","networkdays_intl"]});
+P({id:"c_days_between",cat:"date",title:"두 날짜 사이 일수 (당일 포함)",
+ k:["며칠","일수","기간 일수","휴직 일수","날짜 차이","당일 포함"],
+ f:"=종료일-시작일+1",d:"날짜끼리 빼면 일수. 시작일도 하루로 셀 때 +1.",
+ ex:{c:["시작","종료"],r:[["2024-03-01","2024-03-31"]],calc:[["C2","=B2-A2+1","31"]]},
+ tips:["결과가 날짜로 보이면 셀 서식을 '일반'으로."],rel:["days"]});
+P({id:"c_weekday_name",cat:"date",title:"날짜에서 요일 글자로 (월, 화… / 월요일)",
+ k:["요일","무슨 요일","요일 표시","요일 글자"],
+ f:'=TEXT(날짜, "aaa")  /  =TEXT(날짜, "aaaa")',d:"한국어 엑셀에서 aaa=월, aaaa=월요일.",
+ ex:{c:["날짜"],r:[["2024-03-15"]],calc:[["B2",'=TEXT(A2,"aaa")',"금","n"],["C2",'=TEXT(A2,"aaaa")',"금요일","n"]]},
+ tips:["날짜 칸 자체에 요일까지 보이게 하려면 셀 서식 사용자 지정: yyyy-mm-dd (aaa)"],rel:["text_fn","weekday","k_custom_format"]});
+P({id:"c_yyyymmdd",cat:"date",title:"20240315 같은 8자리 숫자를 날짜로",
+ k:["8자리","yyyymmdd","숫자 날짜","날짜 변환","날짜 인식","시스템 날짜"],
+ f:"=DATE(LEFT(셀,4), MID(셀,5,2), RIGHT(셀,2))",
+ d:"인사시스템에서 내려받은 숫자형 날짜를 진짜 날짜로 바꿔요.",
+ ex:{c:["일자"],r:[[20240315]],calc:[["B2","=DATE(LEFT(A2,4),MID(A2,5,2),RIGHT(A2,2))","2024-03-15"]]},
+ tips:["수식 없이: 열 선택 → 데이터 → 텍스트 나누기 → 3단계에서 '날짜 YMD' 선택 → 마침."],rel:["k_text_to_columns","datevalue"]});
+
+/* ===== 시간 ===== */
+P({id:"c_work_hours",cat:"date",pop:1,title:"근무시간 계산 (출근~퇴근, 휴게 빼기)",
+ k:["근무시간","근로시간","출퇴근","휴게시간","시간 계산","실근무"],
+ f:"=(퇴근-출근-휴게)*24",d:"시각끼리 빼고 24를 곱하면 '시간 수'(9.5 등) 숫자가 돼요.",
+ ex:{c:["출근","퇴근","휴게"],r:[["09:00","18:30","01:00"]],calc:[["D2","=(B2-A2-C2)*24","8.5"],["E2","=B2-A2-C2","8:30 (시각 서식일 때)"]]},
+ rel:["c_night_shift","c_time_to_num","c_time_over24"]});
+P({id:"c_night_shift",cat:"date",title:"자정 넘는 근무시간 (야간조)",
+ k:["야간","자정","밤샘","익일","다음날 퇴근","야간 근무시간"],
+ f:"=MOD(퇴근-출근, 1)*24",d:"퇴근이 출근보다 작으면(다음날) 그냥 빼면 음수가 돼요. MOD(…,1)로 하루를 더해줘요.",
+ ex:{c:["출근","퇴근"],r:[["22:00","06:00"]],calc:[["C2","=MOD(B2-A2,1)*24","8"]]},rel:["mod","c_work_hours"]});
+P({id:"c_time_to_num",cat:"date",title:"시간(8:30)을 숫자(8.5)로 / 숫자를 시간으로",
+ k:["시간을 숫자로","8.5시간","시간 변환","분 단위","숫자를 시간으로"],
+ f:"=시각*24  /  =숫자/24",d:"엑셀에서 하루=1이라, 시각×24=시간 수, ×1440=분. 반대로 숫자÷24에 시간 서식을 입히면 시각.",
+ ex:{c:["시간"],r:[["08:30"]],calc:[["B2","=A2*24","8.5"],["C2","=A2*1440","510 (분)"]]},rel:["c_work_hours"]});
+P({id:"c_time_over24",cat:"format",title:"시간 합계가 24시간 넘으면 이상하게 나올 때",
+ k:["24시간 초과","시간 합계","월 근무시간 합계","시간이 리셋","[h]:mm"],
+ f:"셀 서식 → 사용자 지정 → [h]:mm",d:"일반 시간 서식은 24시간마다 0으로 돌아가요. 대괄호 [h]를 쓰면 누적 시간 그대로 보여요.",
+ steps:["합계 칸 선택 → Ctrl + 1","표시 형식 → 사용자 지정","형식에 [h]:mm 입력 → 확인"],rel:["k_custom_format","c_time_to_num"]});
+P({id:"c_time_unit",cat:"date",title:"근무시간을 30분(15분) 단위로 맞추기",
+ k:["30분 단위","15분 단위","단위 절사","시간 반올림","분 절사"],
+ f:'=FLOOR.MATH(시각, "0:30")',d:"시각을 30분 단위로 내려요. 올림은 CEILING.MATH.",
+ ex:{c:["퇴근"],r:[["18:47"]],calc:[["B2",'=FLOOR.MATH(A2,"0:30")',"18:30","n"]]},rel:["ceiling"]});
+
+/* ===== 숫자 ===== */
+P({id:"c_won_cut",cat:"num",pop:1,title:"원 단위 절사 (10원 미만 버림)",
+ k:["원단위 절사","10원 절사","절사","버림","끝전","단수","보험료 절사","급여 절사"],
+ f:"=ROUNDDOWN(금액, -1)",d:"-1 = 10원 미만 버림, -2 = 100원 미만 버림, 0 = 소수점만 버림.",
+ ex:{c:["금액"],r:[[123456.7]],calc:[["B2","=ROUNDDOWN(A2,-1)","123,450"],["C2","=ROUNDDOWN(A2,0)","123,456"],["D2","=ROUND(A2,-1)","123,460 (반올림)"]]},
+ tips:["보험료·세금은 기관마다 절사 기준이 달라요 — 고지 기준을 꼭 확인하세요."],rel:["rounddown","c_rate_calc"]});
+P({id:"c_rate_calc",cat:"num",title:"요율 곱해서 보험료·공제액 계산",
+ k:["요율","보험료 계산","공제액","곱하기 요율","4대보험","건강보험","국민연금","%곱하기"],
+ f:"=ROUNDDOWN(보수월액 * 요율셀, -1)",
+ d:"요율은 숫자로 직접 쓰지 말고 별도 칸에 두고 $로 고정해 참조하세요. 요율이 바뀌어도 한 칸만 고치면 돼요.",
+ ex:{c:["보수월액","","요율(예시)"],r:[[3000000,null,0.035]],calc:[["B2","=ROUNDDOWN(A2*$C$2,-1)","105,000"]]},
+ note:"요율 3.5%는 예시예요. 실제 요율은 해당 연도 고지 기준을 쓰세요.",
+ tips:["상·하한액이 있으면 =MIN(MAX(보수,하한),상한)로 먼저 보수를 잘라요."],rel:["c_won_cut","c_absolute_ref","c_clamp"]});
+P({id:"c_clamp",cat:"num",title:"상한·하한 걸기 (최대 ○원까지만)",
+ k:["상한","하한","최대치","최소치","한도","상한액","하한액","캡"],
+ f:"=MIN(MAX(값, 하한), 상한)",d:"하한보다 작으면 하한, 상한보다 크면 상한으로 잘라요.",
+ ex:{c:["값","하한","상한"],r:[[50,100,500],[700,100,500]],calc:[["D2","=MIN(MAX(A2,B2),C2)","100"],["D3","=MIN(MAX(A3,B3),C3)","500"]]},rel:["max"]});
+P({id:"c_absolute_ref",cat:"fix",pop:1,title:"수식 복사하면 범위가 밀릴 때 ($ 고정, F4)",
+ k:["절대참조","상대참조","$","f4","고정","범위 밀림","복사하면 틀림","달러"],
+ d:"범위 앞에 $를 붙이면 복사해도 안 움직여요. 셀 주소를 클릭한 뒤 F4를 누르면 $A$1 → A$1 → $A1 → A1 순서로 바뀌어요.",
+ steps:["수식 입력 중 범위(예: A2:A100)를 선택한 상태에서 F4","$A$2:$A$100 이 되면 아래·옆 어디로 복사해도 고정","행만 고정: A$2, 열만 고정: $A2"],
+ ex:{c:["이름","급여"],r:[["김하늘",300],["이바다",320]],calc:[["C2","=B2/SUM($B$2:$B$3)","0.484…"],["C3","=B3/SUM($B$2:$B$3)","0.516…"]]},
+ tips:["찾기(XLOOKUP·VLOOKUP)의 표 범위, 요율 칸은 거의 항상 고정해야 해요."],rel:["c_cumulative","c_dup_nth"]});
+
+/* ===== 텍스트 정리 ===== */
+P({id:"c_text_number",cat:"fix",pop:1,title:"사번이 분명 있는데 못 찾을 때 (텍스트형 숫자)",
+ k:["텍스트형 숫자","숫자로 변환","못찾음","#N/A","초록 삼각형","매칭 안됨","사번 안맞음","숫자가 글자"],
+ f:"=XLOOKUP(TEXT(사번,\"0\"), ...)  또는  =XLOOKUP(--사번, ...)",
+ d:"한쪽 사번은 숫자 1001, 다른 쪽은 글자 \"1001\"이면 다른 값으로 봐요. 한쪽 형식에 맞춰 주세요.",
+ steps:["셀 왼쪽 위 초록 삼각형이 있으면 텍스트형 숫자","범위 선택 → 느낌표 아이콘 → '숫자로 변환'","또는 수식에서: 숫자로 맞추려면 --A2, 글자로 맞추려면 A2&\"\""],
+ ex:{c:["사번(글자)"],r:[["1001"]],calc:[["B2","=ISTEXT(A2)","TRUE (글자라면)","n"],["C2","=--A2","1001 (숫자)","n"]]},
+ tips:["사번 앞에 0이 있으면(00123) 숫자로 바꾸면 0이 사라져요 → 양쪽을 글자로 맞추세요."],rel:["value","isfn","c_clean_space","c_zero_pad"]});
+P({id:"c_clean_space",cat:"text",title:"공백·특수공백 섞인 값 정리 (찾기 안 될 때)",
+ k:["공백 정리","특수 공백","char(160)","보이지 않는 공백","띄어쓰기","복사한 데이터","안 지워지는 공백"],
+ f:'=TRIM(SUBSTITUTE(셀, CHAR(160), " "))',
+ d:"웹·시스템에서 복사한 값에는 TRIM으로 안 지워지는 특수 공백(CHAR(160))이 섞여 있어요. 먼저 일반 공백으로 바꾼 뒤 TRIM.",
+ ex:{c:["이름"],r:[["  김하늘 "]],calc:[["B2",'=TRIM(SUBSTITUTE(A2,CHAR(160)," "))',"김하늘"],["C2","=LEN(A2)","6 → 공백까지 센 글자 수로 확인"]]},
+ tips:["공백을 아예 없애려면 =SUBSTITUTE(A2,\" \",\"\")"],rel:["trim","clean","c_text_number"]});
+P({id:"c_zero_pad",cat:"text",title:"앞자리 0 채우기 (123 → 000123)",
+ k:["0 채우기","앞에 0","자릿수 맞추기","000","사번 6자리","제로패딩"],
+ f:'=TEXT(숫자, "000000")',d:"정해진 자릿수가 되도록 앞을 0으로 채운 글자를 만들어요.",
+ ex:{c:["번호"],r:[[123]],calc:[["B2",'=TEXT(A2,"000000")',"000123"]]},
+ tips:["입력할 때부터 0을 유지하려면 셀 서식을 '텍스트'로 하거나 맨 앞에 ' (작은따옴표)를 붙여요.","보이기만 바꾸려면 셀 서식 사용자 지정 000000."],rel:["text_fn","k_custom_format"]});
+P({id:"c_join_id_name",cat:"text",title:"이름과 사번 합쳐서 한 칸에 (김하늘(1001))",
+ k:["이름 사번 합치기","합쳐서 표시","괄호","붙여서"],
+ f:'=이름&"("&사번&")"',d:"&로 이어 붙이고 기호는 큰따옴표로 넣어요.",
+ ex:{c:["사번","이름"],r:[[1001,"김하늘"]],calc:[["C2",'=B2&"("&A2&")"',"김하늘(1001)"]]},rel:["concat"]});
+P({id:"c_join_by_group",cat:"text",title:"부서별 사람 이름을 한 칸에 쉼표로 모으기",
+ k:["부서별 이름","명단 합치기","한칸에 나열","쉼표로","그룹별 나열","textjoin filter"],
+ f:'=TEXTJOIN(", ", TRUE, FILTER(이름열, 부서열=부서))',d:"FILTER로 해당 부서 이름만 뽑아 TEXTJOIN으로 이어 붙여요.",
+ ex:{c:["이름","부서","급여"],r:DEPT.r,calc:[["E2",'=TEXTJOIN(", ",TRUE,FILTER(A2:A5,B2:B5="영업"))',"김하늘, 박산"]]},rel:["textjoin","filter"]});
+P({id:"c_split_text",cat:"text",title:"한 칸의 글자를 여러 칸으로 나누기",
+ k:["나누기","분리","쪼개기","열 나누기","구분자","쉼표로 분리"],
+ f:'=TEXTSPLIT(셀, ",")',d:"수식으로는 TEXTSPLIT, 한 번만 바꾸려면 '텍스트 나누기' 기능이 빨라요.",rel:["textsplit","k_text_to_columns","textbefore"]});
+P({id:"c_mask",cat:"text",title:"개인정보 가리기 (가운데 ***)",
+ k:["마스킹","가리기","별표","개인정보","전화번호 가리기","이름 가리기","김*늘"],
+ f:'=REPLACE(셀, 시작, 개수, "***")',d:"공유용 파일에서 일부 글자를 *로 바꿔요.",
+ ex:{c:["이름","연락처"],r:[["김하늘","010-1234-5678"]],calc:[["C2",'=REPLACE(A2,2,1,"*")',"김*늘"],["D2",'=REPLACE(B2,5,4,"****")',"010-****-5678"]]},
+ tips:["수식 결과만 남기고 원본 열은 삭제해야 실제로 가려져요 (값 붙여넣기 후 원본 삭제)."],rel:["replace","k_paste_special"]});
+P({id:"c_newline",cat:"text",title:"셀 안에서 줄바꿈 넣기·없애기",
+ k:["줄바꿈","alt enter","엔터","한셀 두줄","char(10)","줄바꿈 제거"],
+ f:'=A2&CHAR(10)&B2  /  =SUBSTITUTE(A2, CHAR(10), " ")',
+ d:"직접 입력은 Alt + Enter. 수식으로는 CHAR(10)을 넣고 '텍스트 줄 바꿈'을 켜야 보여요.",
+ tips:["홈 탭 → 맞춤 → '텍스트 줄 바꿈' 켜기."],rel:["clean"]});
+
+/* ===== 필터·정렬 상황 ===== */
+P({id:"c_filter_rows",cat:"dyn",title:"조건 맞는 사람 목록을 다른 시트에 자동으로",
+ k:["조건 목록","자동 추출","대상자 명단","해당자 뽑기","조건 명단","필터 결과 복사"],
+ f:'=FILTER(원본!A2:F500, 원본!C2:C500="영업", "없음")',
+ d:"원본이 바뀌면 목록도 자동으로 바뀌어요. 매번 필터→복사→붙여넣기를 안 해도 돼요.",
+ ex:{c:["이름","부서","급여"],r:DEPT.r,calc:[["E2",'=FILTER(A2:C5,(B2:B5="영업")+(B2:B5="생산"))',"김하늘·박산·최들 (영업 또는 생산)","s"]]},
+ tips:["머리글은 위 칸에 직접 써두세요.","결과를 정렬까지: =SORT(FILTER(...),3,-1)"],rel:["filter","c_spill"]});
+P({id:"c_merge_sheets",cat:"dyn",title:"여러 시트(월별) 데이터 하나로 합치기",
+ k:["시트 합치기","취합","통합","월별 시트 합치기","여러 시트","하나로"],
+ f:"=VSTACK('1월:12월'!A2:F200)",
+ d:"시트들이 같은 양식이면 '첫시트:마지막시트'로 한 번에 이어 붙여요. 빈 줄은 FILTER로 걸러요.",
+ tips:["파일이 여러 개라면 '파워 쿼리로 폴더 파일 합치기'가 더 안정적이에요.","같은 칸 합계만 필요하면 =SUM('1월:12월'!B2)"],rel:["vstack","c_sum_sheets","k_powerquery"]});
+P({id:"c_sum_sheets",cat:"sum",title:"여러 시트의 같은 칸 합계",
+ k:["시트 합계","3d 참조","여러시트 합계","월별 시트 합계","시트 전체 더하기"],
+ f:"=SUM('1월:12월'!B2)",d:"1월~12월 시트 사이 모든 시트의 B2를 더해요. 시트 순서가 중요해요.",rel:["c_merge_sheets"]});
+P({id:"c_serial",cat:"lookup",title:"일련번호(순번) 자동으로 매기기",
+ k:["순번","일련번호","번호 매기기","연번","no","자동 번호"],
+ f:"=ROW()-1  또는  =SEQUENCE(COUNTA(B:B)-1)",
+ d:"ROW()-1은 행을 지워도 번호가 다시 맞춰져요. SEQUENCE는 인원수만큼 자동으로 펼쳐져요.",rel:["row","sequence","c_serial_filter"]});
+P({id:"c_serial_filter",cat:"sum",title:"필터해도 1,2,3 순번 유지하기",
+ k:["필터 순번","보이는 것만 번호","필터 후 번호","순번 유지"],
+ f:"=SUBTOTAL(103, $B$2:B2)",d:"보이는 행만 세어서 번호를 매겨요. 필터를 바꿔도 1부터 다시.",
+ ex:{c:["번호","이름"],r:[[null,"김하늘"],[null,"이바다"]],calc:[["A2","=SUBTOTAL(103,$B$2:B2)","1"],["A3","=SUBTOTAL(103,$B$2:B3)","2"]]},rel:["subtotal","c_serial"]});
+
+/* ===== 문제 해결 ===== */
+P({id:"c_na_reason",cat:"fix",pop:1,title:"#N/A 가 뜰 때 원인 체크",
+ k:["#n/a","엔에이","못 찾음","찾기 오류","vlookup 오류","xlookup 오류"],
+ d:"찾는 값이 범위에 '정확히 같은 모양'으로 없다는 뜻이에요. 대부분 아래 셋 중 하나예요.",
+ steps:["숫자/텍스트 형식 차이 — 한쪽에 초록 삼각형이 있는지 확인","앞뒤 공백 — =LEN(셀)로 글자 수 확인","범위 밀림 — 복사한 수식의 범위가 $로 고정됐는지 확인","VLOOKUP이면 마지막이 FALSE인지, 찾는 열이 맨 왼쪽인지"],
+ tips:["원인을 다 확인한 뒤 '진짜 없는 사람'만 IFNA로 '없음' 처리하세요."],rel:["c_text_number","c_clean_space","c_absolute_ref","ifna"]});
+P({id:"c_errors",cat:"fix",title:"오류 종류별 뜻 (#VALUE!, #REF!, #DIV/0!, #NAME?)",
+ k:["오류","에러","#value","#ref","#div/0","#name","#num","#spill","#calc","오류 뜻"],
+ d:"오류마다 원인이 정해져 있어요.",
+ steps:["#N/A — 찾는 값이 없음","#VALUE! — 글자를 계산에 썼거나 형식이 안 맞음","#REF! — 참조하던 셀·시트를 지웠음","#DIV/0! — 0이나 빈칸으로 나눔","#NAME? — 함수 이름 오타, 따옴표 빠짐, 버전에 없는 함수","#NUM! — 계산 불가 (예: DATEDIF 시작일이 더 늦음)","#SPILL! — 결과가 펼쳐질 자리에 다른 값이 있음","#CALC! — FILTER 결과가 하나도 없음"],
+ rel:["c_na_reason","c_spill","iferror"]});
+P({id:"c_spill",cat:"fix",title:"#SPILL! 오류 (결과가 안 펼쳐질 때)",
+ k:["spill","#spill","스필","펼쳐지지 않음","분산"],
+ d:"FILTER·UNIQUE·SORT 같은 365 함수는 결과를 여러 칸에 펼쳐요. 그 자리에 값·병합 셀이 있으면 #SPILL!.",
+ steps:["오류 셀을 누르면 펼쳐질 범위가 점선으로 보여요","그 안에 있는 값을 지우거나 수식을 빈 곳으로 옮기기","병합된 셀이면 병합 해제","'표(Ctrl+T)' 안에서는 펼치기가 안 되니 표 밖에 수식 쓰기"],
+ rel:["filter","unique"]});
+P({id:"c_formula_text",cat:"fix",title:"수식이 계산 안 되고 글자로 보일 때",
+ k:["수식이 글자","계산 안됨","수식 그대로 보임","=이 보임","자동 계산 안됨"],
+ d:"셀 서식이 '텍스트'이거나, 수식 보기 모드이거나, 계산 옵션이 수동인 경우예요.",
+ steps:["셀 서식을 '일반'으로 바꾼 뒤 셀에 들어가서(F2) Enter","Ctrl + ` (숫자 1 왼쪽 키)로 수식 보기 모드 끄기","수식 탭 → 계산 옵션 → '자동' 확인"],rel:["c_text_number"]});
+})();
+
+(function(){
+var P = function(o){ o.t="k"; window.EXCEL_DATA.push(o); };
+
+/* ===== 입력·드롭다운 ===== */
+P({id:"k_dropdown",cat:"input",pop:1,title:"드롭다운 목록 만들기 (데이터 유효성 검사)",
+ k:["드롭다운","드롭박스","드랍다운","목록상자","선택목록","콤보박스","선택 상자","리스트 선택","데이터 유효성","유효성 검사","선택지"],
+ d:"셀을 클릭하면 ▼가 생기고 정해진 값 중에서만 고르게 해요. 입력 실수를 막아줘요.",
+ steps:["드롭다운을 넣을 칸(여러 칸 가능)을 선택","데이터 탭 → 데이터 도구 → 데이터 유효성 검사","제한 대상: '목록' 선택","원본에 값을 쉼표로 입력 (예: 영업,인사,생산) 또는 목록이 있는 범위 선택 (예: =$H$2:$H$10)","확인"],
+ tips:["목록이 자주 바뀌면 별도 시트에 목록을 두고 범위로 연결하세요.","목록 범위를 '표(Ctrl+T)'로 만들어 두면 항목을 추가해도 자동 반영되게 할 수 있어요 (이름 정의 활용).","잘못된 값 입력 시 경고 문구는 '오류 메시지' 탭에서 바꿔요."],
+ rel:["k_dropdown_edit","k_dropdown_linked","k_dropdown_dynamic"]});
+P({id:"k_dropdown_edit",cat:"input",title:"드롭다운 목록 수정·삭제",
+ k:["드롭다운 수정","드롭다운 삭제","목록 변경","드롭박스 수정","드롭다운 없애기"],
+ d:"이미 만든 드롭다운의 항목을 바꾸거나 없애요.",
+ steps:["드롭다운이 있는 칸 선택","데이터 탭 → 데이터 유효성 검사","수정: '원본' 값 변경 / 삭제: 왼쪽 아래 '모두 지우기'","같은 설정 칸 전체에 적용하려면 '변경 내용을 설정이 같은 모든 셀에 적용' 체크 → 확인"],
+ rel:["k_dropdown"]});
+P({id:"k_dropdown_linked",cat:"input",title:"연동 드롭다운 (부서 고르면 해당 팀만 나오게)",
+ k:["연동 드롭다운","종속 드롭다운","2단 드롭다운","이중 드롭다운","드롭박스 연동","대분류 소분류"],
+ d:"첫 번째 드롭다운에서 고른 값에 따라 두 번째 드롭다운 목록이 바뀌어요.",
+ steps:["목록 시트에 대분류를 머리글로, 그 아래에 소분류를 적기 (예: 영업 열 아래 영업1팀, 영업2팀)","소분류 범위를 선택 → 수식 탭 → '선택 영역에서 만들기' → '첫 행' 체크 → 머리글 이름이 범위 이름이 됨","첫 번째 칸(A2)에 대분류 드롭다운 만들기","두 번째 칸(B2) → 데이터 유효성 검사 → 목록 → 원본: =INDIRECT(A2)"],
+ tips:["대분류 이름에 공백·기호가 있으면 이름 정의가 안 돼요 (밑줄로 바꾸기).","365에서는 목록 칸에 =FILTER(팀열,부서열=A2) 를 만들어 두고 원본에 그 칸#을 넣는 방법도 있어요."],
+ rel:["k_dropdown","indirect","k_name_define"]});
+P({id:"k_dropdown_dynamic",cat:"input",title:"항목을 추가하면 드롭다운에 자동 반영",
+ k:["드롭다운 자동","목록 자동 추가","동적 드롭다운","드롭다운 범위 늘리기"],
+ d:"목록 칸 아래에 새 항목을 쓰면 드롭다운에도 바로 나오게 해요.",
+ steps:["목록 위치(예: 목록 시트 A1에 머리글, A2부터 항목)를 정함","빈 칸에 =UNIQUE(FILTER(목록!A2:A200,목록!A2:A200<>\"\")) 입력 (예: 목록!C2)","드롭다운 원본에 =목록!$C$2# 입력 (# = 펼쳐진 결과 전체)"],
+ tips:["#(스필 참조)는 365에서만 돼요."],rel:["k_dropdown","unique"]});
+P({id:"k_checkbox",cat:"input",title:"체크박스(확인란) 넣기",
+ k:["체크박스","확인란","체크","체크리스트","네모 체크"],
+ d:"최신 365는 셀 자체에 체크박스를 넣을 수 있어요. 체크=TRUE, 해제=FALSE라 수식에 바로 쓸 수 있어요.",
+ steps:["넣을 칸 선택","삽입 탭 → '확인란' (컨트롤 그룹)","체크된 개수: =COUNTIF(범위,TRUE)"],
+ tips:["메뉴에 '확인란'이 없으면 구버전이라, 개발 도구 탭 → 삽입 → 양식 컨트롤 확인란을 써야 해요."]});
+P({id:"k_flash_fill",cat:"clean",pop:1,title:"빠른 채우기 (Ctrl + E) — 예시 하나로 나머지 자동",
+ k:["빠른 채우기","ctrl e","컨트롤 e","자동 채우기","패턴 채우기","flash fill"],
+ d:"첫 칸에 원하는 결과를 직접 써주면 엑셀이 규칙을 알아채 나머지를 채워요. 이름 분리, 형식 바꾸기에 수식 없이 좋아요.",
+ steps:["원본 옆 칸 첫 줄에 원하는 결과를 직접 입력 (예: 'hong@sf.com' 옆에 'hong')","바로 아래 칸으로 이동","Ctrl + E"],
+ tips:["결과는 값이라 원본이 바뀌어도 안 바뀌어요.","규칙을 잘못 알아채면 두세 줄 더 예시를 써주세요."],rel:["k_text_to_columns","textbefore"]});
+P({id:"k_autofill",cat:"input",title:"채우기 핸들로 연속 데이터·수식 복사",
+ k:["채우기 핸들","드래그 복사","자동 채우기","아래로 복사","더블클릭 복사","연속 데이터","ctrl d"],
+ d:"셀 오른쪽 아래 작은 점(+)을 끌거나 더블클릭하면 아래로 복사·연속 번호가 채워져요.",
+ steps:["수식 칸 선택 → 오른쪽 아래 + 를 더블클릭하면 옆 열 데이터 끝까지 자동 복사","1,2,3처럼 늘리려면 1과 2를 같이 선택하고 끌기","범위 선택 후 Ctrl + D = 위 칸을 아래로 복사"]});
+P({id:"k_date_input",cat:"input",title:"오늘 날짜·지금 시각 빠르게 입력",
+ k:["날짜 단축키","오늘 날짜 입력","ctrl ;","시각 입력","날짜 넣기"],
+ d:"Ctrl + ; 오늘 날짜, Ctrl + Shift + ; 지금 시각. 값으로 들어가서 다음날 열어도 안 바뀌어요.",rel:["today"]});
+
+/* ===== 서식·표시 ===== */
+P({id:"k_cond_dup",cat:"format",pop:1,title:"중복 값 색칠하기 (조건부 서식)",
+ k:["중복 색","중복 표시","중복 강조","조건부 서식","색칠","하이라이트","중복 값"],
+ d:"같은 값이 두 번 이상 나오는 칸에 자동으로 색을 칠해요.",
+ steps:["확인할 범위 선택 (예: 사번 열)","홈 탭 → 스타일 → 조건부 서식","셀 강조 규칙 → 중복 값","색 고르고 확인"],
+ tips:["색칠된 것만 보려면 필터 → 색 기준 필터.","지우기: 조건부 서식 → 규칙 지우기."],rel:["c_dup_mark","k_cond_formula","k_remove_dup"]});
+P({id:"k_cond_formula",cat:"format",title:"조건에 맞는 행 전체 색칠 (수식으로 조건부 서식)",
+ k:["행 색칠","줄 전체 색","조건부 서식 수식","퇴사자 색","특정 값 색","조건 색칠"],
+ d:"예: 상태 열이 '퇴사'인 사람의 줄 전체를 회색으로.",
+ steps:["표 전체 선택 (예: A2:F200, 머리글 제외)","홈 → 조건부 서식 → 새 규칙 → '수식을 사용하여 서식을 지정할 셀 결정'","수식 입력: =$F2=\"퇴사\" (열만 $ 고정, 행은 고정 안 함)","서식 → 채우기 색 → 확인"],
+ tips:["$F2 처럼 열 앞에만 $ — 이게 행 전체 색칠의 핵심.","차액이 0이 아닌 줄: =$G2<>0"],rel:["k_cond_dup","c_absolute_ref"]});
+P({id:"k_custom_format",cat:"format",title:"셀 서식 사용자 지정 (천 단위, 원, 날짜 모양, 0 채우기)",
+ k:["셀 서식","표시 형식","사용자 지정","천단위 쉼표","원 표시","ctrl 1","날짜 모양","yyyy-mm-dd"],
+ d:"값은 그대로 두고 보이는 모양만 바꿔요. Ctrl + 1 → 표시 형식 → 사용자 지정.",
+ steps:["#,##0 → 1,234,567","#,##0\"원\" → 1,234,567원","yyyy-mm-dd (aaa) → 2024-03-15 (금)","000000 → 사번 앞 0 채우기","#,##0,\"천\" → 천 단위로 줄여 보기","0;-0;\"-\" → 0을 - 로 보이기"],
+ tips:["보이는 것과 실제 값이 다를 수 있어요 (소수점 숨김 등). 계산은 실제 값 기준."],rel:["text_fn","c_zero_pad","c_time_over24"]});
+P({id:"k_merge_center",cat:"format",title:"셀 병합 대신 '선택 영역의 가운데로'",
+ k:["셀 병합","병합","가운데 정렬","병합 대신","병합 해제"],
+ d:"병합하면 정렬·필터·복사가 망가지기 쉬워요. 보이기만 가운데로 하려면 '선택 영역의 가운데로'.",
+ steps:["가운데로 보일 칸들 선택 → Ctrl + 1","맞춤 탭 → 가로: '선택 영역의 가운데로' → 확인"],
+ tips:["병합 해제 후 빈칸 채우기는 '빈 셀만 선택해서 한 번에 채우기' 참고."],rel:["k_goto_blank"]});
+P({id:"k_number_korean",cat:"format",title:"숫자를 한글 금액으로 표시 (일금 ○○원정)",
+ k:["한글 금액","금액 한글","dbnum","숫자 한글 표시"],
+ d:"셀 서식 사용자 지정에 [DBNum4][$-ko-KR]G/표준 을 넣으면 1234 → 일천이백삼십사로 보여요.",
+ steps:["Ctrl + 1 → 사용자 지정","형식: \"일금 \"[DBNum4][$-ko-KR]G/표준\"원정\""],
+ tips:["수식으로는 NUMBERSTRING(숫자,1)."],rel:["numberstring"]});
+
+/* ===== 데이터 정리 ===== */
+P({id:"k_remove_dup",cat:"clean",pop:1,title:"중복된 항목 제거 (원본에서 지우기)",
+ k:["중복 제거","중복 삭제","중복 지우기","중복된 항목 제거","겹치는 행 삭제"],
+ d:"선택한 열 기준으로 중복된 행을 지우고 첫 번째만 남겨요. 원본이 바뀌니 복사본에서 하세요.",
+ steps:["표 안 아무 칸 클릭 (또는 범위 선택)","데이터 탭 → 데이터 도구 → 중복된 항목 제거","중복 기준이 될 열만 체크 (예: 사번만)","확인 → 몇 개 지웠는지 알려줘요"],
+ tips:["원본을 남기려면 UNIQUE 함수를 쓰세요.","지우기 전에 COUNTIF로 중복 표시해서 무엇이 지워질지 먼저 보는 게 안전해요."],rel:["unique","c_dup_mark","k_cond_dup"]});
+P({id:"k_text_to_columns",cat:"clean",title:"텍스트 나누기 (한 열을 여러 열로)",
+ k:["텍스트 나누기","열 나누기","구분 기호","쉼표 분리","데이터 나누기","날짜 변환"],
+ d:"쉼표·공백·탭 등으로 된 데이터를 여러 열로 나눠요. 텍스트형 숫자/날짜를 진짜 숫자로 바꿀 때도 써요.",
+ steps:["나눌 열 선택","데이터 탭 → 데이터 도구 → 텍스트 나누기","'구분 기호로 분리됨' → 다음 → 구분 기호(쉼표 등) 체크 → 다음","열 데이터 서식 지정 (사번은 '텍스트', 날짜는 '날짜 YMD') → 마침"],
+ tips:["오른쪽 열에 데이터가 있으면 덮어써요 — 빈 열을 먼저 만들어 두세요.","텍스트형 숫자 변환: 그 열 선택 → 텍스트 나누기 → 바로 '마침'."],rel:["textsplit","k_flash_fill","c_yyyymmdd","c_text_number"]});
+P({id:"k_find_replace",cat:"clean",title:"찾기·바꾸기 (Ctrl + H)",
+ k:["바꾸기","찾기","ctrl h","ctrl f","일괄 변경","한번에 바꾸기","치환"],
+ d:"특정 글자를 한 번에 다른 글자로 바꾸거나 지워요.",
+ steps:["바꿀 범위 선택 (안 하면 시트 전체)","Ctrl + H","찾을 내용 / 바꿀 내용 입력 (지우려면 바꿀 내용 비우기)","모두 바꾸기"],
+ tips:["'옵션'에서 '전체 셀 내용 일치'를 켜면 칸 전체가 같은 것만 바꿔요.","* 는 와일드카드라 별표 자체를 찾으려면 ~* 로 입력.","줄바꿈 찾기: 찾을 내용에 Ctrl + J"],rel:["substitute"]});
+P({id:"k_goto_blank",cat:"clean",title:"빈 셀만 선택해서 한 번에 채우기",
+ k:["빈셀 채우기","빈칸 채우기","위 값으로 채우기","이동 옵션","빈칸 선택","병합 해제 후"],
+ d:"병합 해제 후 생긴 빈칸을 바로 위 값으로 한 번에 채워요.",
+ steps:["범위 선택 → Ctrl + G → 옵션 (또는 홈 → 찾기 및 선택 → 이동 옵션)","'빈 셀' 선택 → 확인 (빈칸만 선택됨)","바로 = 입력 → 위쪽 화살표 ↑ 한 번 → Ctrl + Enter","수식으로 채워졌으니 값 붙여넣기로 확정"],
+ rel:["k_paste_special","k_merge_center","k_delete_blank_rows"]});
+P({id:"k_delete_blank_rows",cat:"clean",title:"빈 행 한 번에 삭제",
+ k:["빈행 삭제","빈 줄 삭제","빈칸 행 지우기","공백 행"],
+ d:"중간중간 빈 줄을 한 번에 지워요.",
+ steps:["기준 열(빈 줄이면 반드시 비는 열) 선택","Ctrl + G → 옵션 → 빈 셀 → 확인","선택된 칸에서 오른쪽 클릭 → 삭제 → '행 전체' → 확인"],
+ tips:["한 칸만 빈 줄도 지워질 수 있어요 — 기준 열을 잘 고르세요. 필터로 (필드 값 없음)만 골라 지우는 방법도 있어요."],rel:["k_goto_blank","k_filter"]});
+P({id:"k_paste_special",cat:"clean",pop:1,title:"선택하여 붙여넣기 (값만, 행열 바꿈, 일괄 곱하기)",
+ k:["값 붙여넣기","값만 붙여넣기","수식 없애기","선택하여 붙여넣기","ctrl alt v","행열 바꿈","일괄 나누기","일괄 곱하기"],
+ d:"수식 대신 결과값만, 서식만, 또는 가로세로 바꿔서 붙여넣어요.",
+ steps:["복사(Ctrl + C) → 붙일 곳 선택 → Ctrl + Alt + V","'값' → 수식이 사라지고 결과만 남음","'행/열 바꿈' 체크 → 가로·세로 뒤집어 붙이기","'연산: 곱하기/나누기' → 예: 1000 복사 후 금액들에 '나누기' → 천 원 단위로 일괄 변환"],
+ tips:["단축: 붙여넣은 뒤 Ctrl 누르고 V → 값만."],rel:["transpose","c_mask"]});
+P({id:"k_table",cat:"clean",title:"표로 만들기 (Ctrl + T)",
+ k:["표 만들기","ctrl t","엑셀 표","표 서식","테이블","자동 확장"],
+ d:"범위를 '표'로 만들면 필터가 자동으로 생기고, 아래에 행을 추가하면 수식·서식이 따라 늘어나요.",
+ steps:["데이터 안 아무 칸 클릭 → Ctrl + T","'머리글 포함' 확인 → 확인","표 디자인 탭에서 표 이름을 정해두면 수식에서 =SUM(급여표[급여])처럼 쓸 수 있어요"],
+ tips:["FILTER·UNIQUE 같은 펼쳐지는 수식은 표 안에 못 써요 (#SPILL!)."],rel:["k_filter","c_spill"]});
+P({id:"k_powerquery",cat:"clean",title:"폴더 안 엑셀 파일 여러 개 합치기 (파워 쿼리)",
+ k:["파일 합치기","파워 쿼리","power query","폴더 합치기","여러 파일","취합"],
+ d:"같은 양식의 파일들을 한 폴더에 모아두면 한 번에 합쳐서 하나의 표로 만들어요. 파일을 추가하고 '새로 고침'만 누르면 다시 합쳐져요.",
+ steps:["합칠 파일들을 한 폴더에 넣기","데이터 탭 → 데이터 가져오기 → 파일에서 → 폴더에서","폴더 선택 → '결합' → '결합 및 로드'","예시 파일·시트를 고르고 확인","나중에: 데이터 → 모두 새로 고침"],
+ tips:["양식(열 이름)이 파일마다 같아야 깔끔하게 합쳐져요.","암호 걸린 파일은 못 읽어요."],rel:["c_merge_sheets","vstack"]});
+
+/* ===== 정렬·필터·피벗 ===== */
+P({id:"k_filter",cat:"analyze",title:"자동 필터 (Ctrl + Shift + L)",
+ k:["필터","자동필터","필터 걸기","ctrl shift l","걸러보기","조건 보기"],
+ d:"머리글에 ▼ 버튼을 만들어 원하는 값만 골라 봐요.",
+ steps:["머리글 행 아무 칸 클릭","Ctrl + Shift + L (또는 데이터 탭 → 필터)","▼ 눌러 원하는 값 체크 / 텍스트 필터·숫자 필터로 조건 지정","해제: 다시 Ctrl + Shift + L"],
+ tips:["필터 결과 합계는 SUBTOTAL(109,…).","필터된 행만 복사하면 보이는 것만 복사돼요."],rel:["subtotal","filter","k_sort"]});
+P({id:"k_sort",cat:"analyze",title:"여러 기준으로 정렬 (부서 → 직급 → 이름)",
+ k:["정렬","다중 정렬","여러 기준 정렬","오름차순","내림차순","사용자 지정 정렬","직급순"],
+ d:"기준을 여러 개 추가해 단계별로 정렬해요. 직급처럼 가나다순이 아닌 순서도 지정할 수 있어요.",
+ steps:["표 안 클릭 → 데이터 탭 → 정렬","기준 추가 → 열·정렬 기준·순서 지정 (위에 있는 기준이 우선)","직급순: 순서 → '사용자 지정 목록' → 부장,차장,과장,대리,사원 입력 → 추가"],
+ tips:["일부 열만 선택하고 정렬하면 다른 열과 어긋나요 — 표 전체 기준으로."],rel:["sort","sortby"]});
+P({id:"k_pivot",cat:"analyze",pop:1,title:"피벗 테이블로 부서별·월별 요약",
+ k:["피벗","피벗테이블","pivot","요약표","집계표","부서별 합계","월별 집계","크로스탭"],
+ d:"수식 없이 끌어다 놓기로 부서별·월별 합계, 인원수 등을 요약해요.",
+ steps:["원본 표 안 클릭 → 삽입 탭 → 피벗 테이블 → 확인 (새 워크시트)","오른쪽 필드 목록에서 '부서'를 행으로, '급여'를 값으로 끌기","월별로 보려면 날짜를 열로 끌기 → 오른쪽 클릭 → 그룹 → 월","값 계산 바꾸기: 값 필드 → 값 필드 설정 → 합계/개수/평균"],
+ tips:["원본이 바뀌면 피벗 안 오른쪽 클릭 → 새로 고침.","원본을 표(Ctrl+T)로 만들어 두면 행이 늘어도 범위가 자동 확장돼요.","피벗 값 더블클릭 → 그 숫자를 만든 원본 행만 새 시트로 나와요 (검증할 때 유용)."],
+ rel:["c_sum_by_dept","groupby","k_table"]});
+P({id:"k_subtotal_feature",cat:"analyze",title:"부분합 기능 (부서마다 소계 줄 넣기)",
+ k:["부분합","소계","부서별 소계","그룹 소계"],
+ d:"정렬된 데이터에 그룹마다 소계 행을 자동으로 넣어요.",
+ steps:["먼저 그룹 기준(부서)으로 정렬","데이터 탭 → 개요 → 부분합","그룹화할 항목: 부서 / 함수: 합계 / 계산 항목: 급여 체크 → 확인","왼쪽 1·2·3 버튼으로 소계만 접어 보기"],
+ tips:["없애기: 부분합 창에서 '모두 제거'."],rel:["k_pivot","subtotal"]});
+P({id:"k_goal_seek",cat:"analyze",title:"목표값 찾기 (원하는 결과가 나오는 입력값 역산)",
+ k:["목표값 찾기","역산","거꾸로 계산","세후에서 세전","가상 분석"],
+ d:"결과가 특정 값이 되려면 입력값이 얼마여야 하는지 엑셀이 대신 찾아줘요.",
+ steps:["결과 수식 칸과 바꿀 입력 칸을 준비","데이터 탭 → 가상 분석 → 목표값 찾기","수식 셀: 결과 칸 / 찾는 값: 원하는 결과 / 값을 바꿀 셀: 입력 칸 → 확인"]});
+
+/* ===== 보기·인쇄 ===== */
+P({id:"k_freeze",cat:"view",pop:1,title:"틀 고정 (스크롤해도 머리글 보이게)",
+ k:["틀 고정","머리글 고정","제목 고정","첫행 고정","첫열 고정","스크롤 고정"],
+ d:"아래로 내려도 머리글 행(또는 이름 열)이 계속 보이게 해요.",
+ steps:["보기 탭 → 틀 고정","'첫 행 고정' 또는 '첫 열 고정'","행·열 둘 다: 고정할 행 아래·열 오른쪽 칸(예: B2) 선택 → 틀 고정 → 틀 고정"],rel:["k_print_title"]});
+P({id:"k_print_title",cat:"view",title:"인쇄할 때 페이지마다 머리글 반복",
+ k:["인쇄 제목","머리글 반복","페이지마다 제목","인쇄 반복 행"],
+ d:"여러 장으로 인쇄될 때 모든 페이지 위에 머리글이 나오게 해요.",
+ steps:["페이지 레이아웃 탭 → 인쇄 제목","'반복할 행'에 머리글 행 선택 (예: $1:$1) → 확인"],rel:["k_print_fit"]});
+P({id:"k_print_fit",cat:"view",title:"한 페이지에 맞춰 인쇄",
+ k:["한장에 인쇄","페이지 맞춤","인쇄 축소","인쇄 잘림","가로 인쇄"],
+ d:"표가 잘려 여러 장으로 나뉠 때 한 페이지 너비에 맞춰요.",
+ steps:["Ctrl + P (인쇄 미리보기)","설정 맨 아래 '현재 설정된 용지' → '한 페이지에 모든 열 맞추기'","필요하면 방향 → 가로"],
+ tips:["인쇄 영역만 지정: 범위 선택 → 페이지 레이아웃 → 인쇄 영역 → 인쇄 영역 설정."],rel:["k_print_title"]});
+P({id:"k_group_rows",cat:"view",title:"행·열 그룹으로 접었다 펴기",
+ k:["그룹","접기","펼치기","숨기기","개요","행 숨기기","열 숨기기"],
+ d:"숨기기보다 다시 펼치기 쉬워요. 상세 열을 접어두고 요약만 볼 때 좋아요.",
+ steps:["접을 행(열) 선택","데이터 탭 → 개요 → 그룹 (단축키 Shift + Alt + →)","왼쪽(위쪽) − 버튼으로 접기, + 로 펼치기"]});
+P({id:"k_shortcuts",cat:"view",title:"자주 쓰는 단축키 모음",
+ k:["단축키","단축","키보드","빠르게","ctrl"],
+ d:"이것만 알아도 작업이 확 빨라져요.",
+ steps:["Ctrl + 방향키 — 데이터 끝으로 이동 / Ctrl + Shift + 방향키 — 끝까지 선택","Ctrl + ; — 오늘 날짜 / Alt + = — 자동 합계","F2 — 셀 편집 / F4 — $ 고정 (수식 중) 또는 마지막 작업 반복","Ctrl + 1 — 셀 서식 / Ctrl + T — 표 만들기 / Ctrl + Shift + L — 필터","Ctrl + E — 빠른 채우기 / Ctrl + D — 위 칸 복사","Ctrl + Alt + V — 선택하여 붙여넣기 / Ctrl + H — 바꾸기","Alt + Enter — 셀 안 줄바꿈 / Ctrl + Enter — 선택한 칸 모두에 같은 값 입력","Ctrl + ` — 수식 보기 전환"],
+ rel:["k_flash_fill","k_paste_special","c_absolute_ref"]});
+
+/* ===== 보호·파일 ===== */
+P({id:"k_protect_sheet",cat:"protect",title:"시트 보호 (수식 칸은 못 고치게, 입력 칸만 열기)",
+ k:["시트 보호","잠금","수정 못하게","입력칸만","셀 잠금","보호"],
+ d:"수식이나 기준표가 실수로 지워지지 않게 막아요.",
+ steps:["입력해도 되는 칸 선택 → Ctrl + 1 → 보호 탭 → '잠금' 체크 해제","검토 탭 → 시트 보호 → (필요하면 암호) → 확인","이제 잠금 해제한 칸만 입력 가능"],
+ tips:["암호를 잊으면 풀기 어려워요 — 따로 기록해 두세요."],rel:["k_file_password"]});
+P({id:"k_file_password",cat:"protect",title:"파일에 열기 암호 걸기",
+ k:["파일 암호","비밀번호","암호 설정","열기 암호","암호화","개인정보 파일"],
+ d:"급여·개인정보가 있는 파일은 열 때 암호를 묻도록 해요.",
+ steps:["파일 → 정보 → 통합 문서 보호 → 암호 설정","암호 입력 → 확인 → 한 번 더 입력 → 저장"],
+ tips:["해제: 같은 메뉴에서 암호 칸을 비우고 확인 → 저장.","메일 첨부 시 암호는 다른 경로(메신저 등)로 따로 전달하세요."],rel:["k_protect_sheet"]});
+P({id:"k_name_define",cat:"protect",title:"이름 정의 (범위에 이름 붙이기)",
+ k:["이름 정의","이름 관리자","범위 이름","named range","이름 상자"],
+ d:"자주 쓰는 범위나 요율 칸에 이름을 붙이면 수식이 =급여*요율 처럼 읽기 쉬워져요.",
+ steps:["범위 선택 → 왼쪽 위 이름 상자(A1이 보이는 칸)에 이름 입력 → Enter","수정·삭제: 수식 탭 → 이름 관리자"],
+ tips:["이름에는 공백을 못 써요 (밑줄 사용)."],rel:["k_dropdown_linked","c_rate_calc"]});
+P({id:"k_external_link",cat:"fix",title:"다른 파일 연결(외부 링크) 찾기·끊기",
+ k:["외부 링크","연결 끊기","링크 편집","업데이트 경고","다른 파일 참조","연결 편집"],
+ d:"파일을 열 때 '외부 원본 링크 업데이트' 경고가 뜨면 다른 파일을 참조하는 수식이 남아 있는 거예요.",
+ steps:["데이터 탭 → '링크 편집' 또는 '통합 문서 링크' (버전에 따라 이름이 달라요)","목록에서 링크 선택 → '연결 끊기' (수식이 값으로 바뀜)","어디서 쓰는지 찾으려면 Ctrl + F → 찾을 내용 [ 또는 .xlsx → 찾는 위치 '수식'"],
+ tips:["끊기 전에 백업 — 되돌릴 수 없어요.","이름 관리자·조건부 서식·데이터 유효성 검사 안에도 링크가 숨어 있을 수 있어요."]});
+P({id:"k_formula_eval",cat:"fix",title:"긴 수식이 어디서 틀렸는지 단계별로 보기",
+ k:["수식 계산","수식 디버깅","단계별","어디서 틀렸는지","f9","수식 확인"],
+ d:"수식 탭 → 수식 계산을 누르면 수식이 한 단계씩 어떻게 계산되는지 보여줘요.",
+ steps:["수식 칸 선택 → 수식 탭 → 수식 분석 → 수식 계산","'계산'을 누를 때마다 밑줄 친 부분이 결과로 바뀜","수식 입력줄에서 일부만 드래그 → F9 누르면 그 부분 결과 확인 (Esc로 원래대로)"],
+ tips:["F9로 확인한 뒤 Enter를 누르면 그 값으로 고정돼 버려요 — 꼭 Esc."],rel:["c_errors"]});
+})();
+
+(function(){
+var A = function(o){ if(!o.t) o.t="c"; o.lv=2; o.k=(o.k||[]).concat(["심화"]); window.EXCEL_DATA.push(o); };
+var DEPT = {c:["이름","부서","급여"], r:[["김하늘","영업",300],["이바다","인사",320],["박산","영업",280],["최들","생산",310]]};
+var DEPT2 = {c:["이름","부서","직급","급여"], r:[["김하늘","영업","사원",300],["이바다","영업","대리",350],["박산","영업","사원",280],["최들","인사","사원",310]]};
+var EMP = {c:["사번","이름","부서"], r:[[1001,"김하늘","영업"],[1002,"이바다","인사"],[1003,"박산","생산"]]};
+var DUP = {c:["사번","부서","월"], r:[[1001,"영업","1월"],[1002,"인사","1월"],[1001,"영업","2월"],[1003,"영업","2월"]]};
+function ex(base, calc, note){ return {c:base.c, r:base.r, calc:calc, note:note}; }
+
+/* ===== 찾기 심화 ===== */
+A({id:"a_xl_multi_rows",cat:"lookup",pop:1,title:"찾는 값이 여러 줄이면 전부 가져오기 (XLOOKUP → FILTER)",
+ from:["xlookup","vlookup","c_find_name"],ask:"같은 값이 여러 줄이면 전부 가져오려면?",
+ k:["xlookup 여러개","vlookup 여러개","여러개 가져오기","전부 가져오기","모두 찾기","여러 결과","중복 값 모두","해당자 전부"],
+ f:'=FILTER(가져올열, 찾을열=찾을값, "없음")',
+ d:"XLOOKUP·VLOOKUP은 처음 찾은 한 줄만 가져와요. 같은 부서 사람 전부처럼 여러 줄이 필요하면 FILTER를 써요. 결과가 아래로 펼쳐져요.",
+ ex:ex(DEPT,[["E2",'=FILTER(A2:A5,B2:B5="영업","없음")',"김하늘 / 박산 (아래로 2칸)","s"],["F2",'=TEXTJOIN(", ",TRUE,FILTER(A2:A5,B2:B5="영업"))',"김하늘, 박산 (한 칸에)"],["G2",'=FILTER(A2:C5,B2:B5="영업")',"김하늘 영업 300 / 박산 영업 280 (줄 전체)","s"]]),
+ tips:["펼쳐질 자리(아래·옆 칸)가 비어 있어야 해요 — 아니면 #SPILL!","몇 명인지만 필요하면 COUNTIF가 더 가벼워요."],
+ rel:["filter","c_join_by_group","a_filter_and_or"]});
+A({id:"a_xl_multi_cols",cat:"lookup",pop:1,title:"한 번에 여러 열 가져오기 (이름·부서·급여 같이)",
+ from:["xlookup","c_find_name","vlookup"],ask:"이름·부서를 한 번에 여러 칸 가져오려면?",
+ k:["여러 열","여러칸","한번에 가져오기","xlookup 여러열","옆으로 여러개","열 여러개"],
+ f:"=XLOOKUP(찾을값, 찾을열, 첫열:끝열)",
+ d:"가져올범위를 한 열이 아니라 여러 열(B:D)로 주면 옆으로 펼쳐져요. 수식을 열마다 따로 만들 필요가 없어요.",
+ ex:ex(EMP,[["E2","=XLOOKUP(1002,A2:A4,B2:C4)","이바다 | 인사 (옆으로 2칸)","s"]]),
+ tips:["필요한 열이 떨어져 있으면 CHOOSECOLS로 골라요: =CHOOSECOLS(XLOOKUP(값,A:A,B:F),1,4)"],
+ rel:["a_xl_multi_keys","choosecols"]});
+A({id:"a_xl_multi_keys",cat:"lookup",title:"사번 여러 개를 수식 하나로 한꺼번에 찾기",
+ from:["xlookup","c_find_name"],ask:"찾을 사번이 여러 개면 수식 하나로?",
+ k:["여러 사번","한꺼번에 찾기","목록 전체 찾기","수식 하나로","찾을값 범위","일괄 조회"],
+ f:'=XLOOKUP(찾을값범위, 찾을열, 가져올열, "없음")',
+ d:"찾을값 자리에 칸 하나 대신 범위(E2:E20)를 넣으면 모든 사번의 결과가 아래로 한 번에 펼쳐져요. 아래로 복사할 필요가 없어요.",
+ ex:{c:["사번","이름","부서","","찾을 사번"],r:[[1001,"김하늘","영업",null,1003],[1002,"이바다","인사",null,1001],[1003,"박산","생산",null,1009]],
+   calc:[["F2",'=XLOOKUP(E2:E4,A2:A4,B2:B4,"없음")',"박산 / 김하늘 / 없음 (아래로 3칸)","s"]]},
+ tips:["찾을 사번 목록이 늘어날 수 있으면 E2:E500처럼 넉넉히 잡고, 빈칸은 \"없음\" 대신 \"\"로 두세요.","이 방식에선 범위 $ 고정이 필요 없어요 (복사를 안 하니까)."],
+ rel:["a_xl_multi_cols","c_find_name"]});
+A({id:"a_two_way",cat:"lookup",title:"가로·세로 교차 찾기 (사번 × 월)",
+ from:["xlookup","index","c_lookup_multi"],ask:"사번(세로)과 월(가로)이 만나는 칸을 찾으려면?",
+ k:["교차","가로세로","행열 찾기","2차원 찾기","매트릭스","월별 표에서 찾기","index match match"],
+ f:"=XLOOKUP(사번, 사번열, XLOOKUP(월, 월머리글행, 표전체))",
+ d:"안쪽 XLOOKUP이 해당 월의 열 전체를 골라 오고, 바깥 XLOOKUP이 그 열에서 사번 줄을 찾아요.",
+ ex:{c:["사번","1월","2월","3월"],r:[[1001,300,310,305],[1002,280,290,295]],
+   calc:[["F2",'=XLOOKUP(1002,A2:A3,XLOOKUP("2월",B1:D1,B2:D3))',"290"],["F3",'=INDEX(B2:D3,MATCH(1002,A2:A3,0),MATCH("2월",B1:D1,0))',"290 (예전 방식)"]]},
+ rel:["index","match","hlookup"]});
+A({id:"a_partial",cat:"lookup",title:"일부 글자만 맞아도 찾기 (부분 일치)",
+ from:["xlookup","c_contains"],ask:"이름 일부만 알 때 찾으려면?",
+ k:["부분 일치","일부만","포함 찾기","와일드카드 찾기","비슷한 이름","*"],
+ f:'=XLOOKUP("*"&글자&"*", 찾을열, 가져올열, "없음", 2)',
+ d:"다섯 번째 값 2는 와일드카드 모드예요. * 는 아무 글자라서 앞뒤에 붙이면 '포함'이 돼요.",
+ ex:{c:["부서코드","부서명"],r:[["S01","영업1팀"],["S02","인사팀"]],calc:[["D2",'=XLOOKUP("*인사*",B2:B3,A2:A3,"없음",2)',"S02"]]},
+ tips:["여러 개가 맞으면 첫 번째만 가져와요. 전부 필요하면 'FILTER로 글자 포함된 것만'.","VLOOKUP은 기본으로 와일드카드가 돼요: =VLOOKUP(\"*인사*\",B2:C3,…)"],
+ rel:["a_filter_contains"]});
+A({id:"a_xl_fallback",cat:"lookup",title:"첫 번째 표에 없으면 두 번째 표에서 찾기",
+ from:["xlookup","iferror"],ask:"재직자 명단에 없으면 퇴직자 명단에서 찾으려면?",
+ k:["두 표에서 찾기","없으면 다른 표","순서대로 찾기","재직자 퇴직자","2개 명단"],
+ f:'=XLOOKUP(값, 표1열, 표1결과, XLOOKUP(값, 표2열, 표2결과, "없음"))',
+ d:"XLOOKUP의 '없을때' 자리에 또 다른 XLOOKUP을 넣어요. 첫 표에서 못 찾을 때만 두 번째 표를 봐요.",
+ ex:{c:["사번","이름","","퇴직 사번","이름"],r:[[1001,"김하늘",null,2001,"홍길동"],[1002,"이바다",null,2002,"정해"]],
+   calc:[["G2",'=XLOOKUP(2002,A2:A3,B2:B3,XLOOKUP(2002,D2:D3,E2:E3,"없음"))',"정해"],["G3",'=XLOOKUP(1001,A2:A3,B2:B3,XLOOKUP(1001,D2:D3,E2:E3,"없음"))',"김하늘"]]},
+ tips:["표가 같은 양식이면 VSTACK으로 합쳐서 한 번에 찾아도 돼요."],rel:["vstack"]});
+
+/* ===== FILTER 심화 ===== */
+A({id:"a_filter_and_or",cat:"dyn",pop:1,title:"FILTER 조건 여러 개 (그리고 / 또는)",
+ from:["filter","a_xl_multi_rows"],ask:"조건이 두 개 이상이면?",
+ k:["filter 여러 조건","다중 조건 추출","그리고","또는","and or","조건 2개 필터"],
+ f:"그리고: =FILTER(범위, (조건1)*(조건2))\n또는:   =FILTER(범위, (조건1)+(조건2))",
+ d:"FILTER 안에서는 AND·OR 함수가 안 먹혀요. 조건마다 괄호로 묶고 곱하기(*)=그리고, 더하기(+)=또는.",
+ ex:ex(DEPT2,[["F2",'=FILTER(A2:A5,(B2:B5="영업")*(C2:C5="사원"))',"김하늘 / 박산","s"],["G2",'=FILTER(A2:A5,(C2:C5="대리")+(D2:D5>=310))',"이바다 / 최들","s"],["H2",'=FILTER(A2:A5,(B2:B5="영업")*((C2:C5="대리")+(D2:D5<290)))',"이바다 / 박산 (섞어 쓰기)","s"]]),
+ tips:["괄호를 빼먹으면 순서가 꼬여요 — 조건마다 꼭 ( )."],rel:["a_filter_date","a_filter_cols_sort"]});
+A({id:"a_filter_date",cat:"dyn",title:"기간 + 부서 조건으로 대상자 뽑기",
+ from:["filter","c_sum_period","c_monthly_hires"],ask:"특정 기간에 입사한 영업부만 뽑으려면?",
+ k:["기간 필터","날짜 조건 추출","입사자 명단","기간 대상자","월 입사자 명단"],
+ f:'=FILTER(범위, (부서열="영업")*(날짜열>=시작일)*(날짜열<=종료일), "없음")',
+ d:"날짜 조건 두 개(이후·이전)와 부서 조건을 곱해서 모두 맞는 사람만 뽑아요.",
+ ex:{c:["이름","부서","입사일"],r:[["김하늘","영업","2024-01-15"],["이바다","영업","2024-03-02"],["박산","인사","2024-03-20"],["최들","영업","2024-04-01"]],
+   calc:[["E2",'=FILTER(A2:A5,(B2:B5="영업")*(C2:C5>=DATE(2024,3,1))*(C2:C5<=DATE(2024,3,31)),"없음")',"이바다","s"]]},
+ tips:["시작일·종료일을 칸에 따로 두고 참조하면 매달 날짜만 바꿔 쓸 수 있어요.","결과 날짜가 숫자로 보이면 그 열에 날짜 서식을 입혀요."],rel:["a_filter_and_or"]});
+A({id:"a_filter_contains",cat:"dyn",title:"FILTER로 특정 글자가 들어간 행만",
+ from:["filter","c_contains","a_partial"],ask:"'영업'이 들어간 팀 전부 뽑으려면?",
+ k:["포함 필터","글자 포함 추출","부분 일치 필터","팀명 포함"],
+ f:'=FILTER(범위, ISNUMBER(SEARCH("글자", 열)))',
+ d:"FILTER 조건에는 * 와일드카드가 안 돼요. SEARCH로 위치를 찾고 ISNUMBER로 참/거짓을 만들어요.",
+ ex:{c:["이름","부서"],r:[["김하늘","영업1팀"],["이바다","인사팀"],["박산","영업2팀"]],calc:[["D2",'=FILTER(A2:A4,ISNUMBER(SEARCH("영업",B2:B4)))',"김하늘 / 박산","s"]]},
+ rel:["c_contains"]});
+A({id:"a_filter_cols_sort",cat:"dyn",title:"뽑은 결과에서 필요한 열만, 정렬까지",
+ from:["filter","choosecols","sort"],ask:"뽑은 결과를 필요한 열만 정렬해서 보려면?",
+ k:["filter 정렬","필요한 열만","열 골라서 정렬","조합","sort filter","choosecols filter"],
+ f:"=SORT(CHOOSECOLS(FILTER(표, 조건), 열1, 열2), 정렬열, -1)",
+ d:"안쪽부터 읽어요: FILTER로 행을 고르고 → CHOOSECOLS로 열을 고르고 → SORT로 정렬.",
+ ex:ex(DEPT2,[["F2",'=SORT(CHOOSECOLS(FILTER(A2:D5,B2:B5="영업"),1,4),2,-1)',"이바다 350 / 김하늘 300 / 박산 280","s"]]),
+ tips:["SORT의 열 번호는 '고른 뒤' 기준이에요 (위 예에선 급여가 2번째)."],rel:["a_topn_group","a_let"]});
+A({id:"a_topn_group",cat:"dyn",title:"부서별 상위 N명",
+ from:["c_top_n","a_filter_cols_sort"],ask:"영업부에서만 상위 2명을 뽑으려면?",
+ k:["부서별 상위","그룹별 top","팀내 상위","상위 n명 부서"],
+ f:"=TAKE(SORT(FILTER(표, 부서열=부서), 기준열, -1), N)",
+ d:"부서로 거르고 → 정렬하고 → 위에서 N줄만 잘라요.",
+ ex:ex(DEPT2,[["F2",'=TAKE(SORT(FILTER(A2:D5,B2:B5="영업"),4,-1),2)',"이바다 영업 대리 350 / 김하늘 영업 사원 300","s"]]),rel:["take","c_rank_group"]});
+A({id:"a_sort_unique_filter",cat:"compare",title:"조건 맞는 것 중 중복 없는 목록 (정렬까지)",
+ from:["unique","c_unique_count"],ask:"영업부 사번만 중복 없이 정렬해서 보려면?",
+ k:["고유 목록 조건","중복 없이 조건","sort unique filter","조건 고유값"],
+ f:"=SORT(UNIQUE(FILTER(열, 조건)))",
+ d:"월별 기록처럼 같은 사람이 여러 줄 있을 때, 조건에 맞는 사람을 한 번씩만 정렬해서 보여줘요.",
+ ex:ex(DUP,[["E2",'=SORT(UNIQUE(FILTER(A2:A5,B2:B5="영업")))',"1001 / 1003","s"],["F2",'=COUNTA(UNIQUE(FILTER(A2:A5,B2:B5="영업")))',"2 (영업 실인원)"]]),
+ rel:["a_count_unique_cond"]});
+A({id:"a_count_unique_cond",cat:"sum",title:"조건 맞는 실인원 (중복 빼고 세기)",
+ from:["c_unique_count","countif"],ask:"월별 기록에서 영업부 실인원만 세려면?",
+ k:["조건 실인원","중복 제외 조건 개수","순인원 조건","부서별 실인원"],
+ f:"=COUNTA(UNIQUE(FILTER(사번열, 조건)))",
+ d:"COUNTIF는 줄 수를 세서 같은 사람이 두 번 세져요. FILTER → UNIQUE → COUNTA 순서로 한 사람당 한 번만 세요.",
+ ex:ex(DUP,[["E2",'=COUNTIF(B2:B5,"영업")',"3 (줄 수)"],["F2",'=COUNTA(UNIQUE(FILTER(A2:A5,B2:B5="영업")))',"2 (실인원)"]]),
+ tips:["조건에 맞는 사람이 0명이면 FILTER가 #CALC! → =IFERROR(COUNTA(UNIQUE(FILTER(…))),0)"],rel:["a_sort_unique_filter"]});
+
+/* ===== 요약표 심화 ===== */
+A({id:"a_summary_one",cat:"sum",pop:1,title:"부서별 합계표를 수식 하나로 (자동으로 늘어나는 요약표)",
+ from:["c_sum_by_dept","sumif","unique"],ask:"부서가 늘어나도 자동으로 따라오는 합계표는?",
+ k:["자동 요약표","수식 하나 합계표","부서 자동","동적 요약","sumif unique","hstack"],
+ f:"=HSTACK(UNIQUE(부서열), SUMIF(부서열, UNIQUE(부서열), 금액열))",
+ d:"SUMIF의 조건 자리에 UNIQUE 결과를 통째로 넣으면 부서마다 합계가 펼쳐져요. HSTACK으로 부서명과 나란히 붙여요.",
+ ex:ex(DEPT,[["E2","=HSTACK(UNIQUE(B2:B5),SUMIF(B2:B5,UNIQUE(B2:B5),C2:C5))","영업 580 / 인사 320 / 생산 310","s"],["E6","=LET(d,UNIQUE(B2:B5),HSTACK(d,SUMIF(B2:B5,d,C2:C5),COUNTIF(B2:B5,d)))","부서 | 합계 | 인원 3열 표","s"]]),
+ tips:["원본 범위를 넉넉히(B2:B1000) 잡으면 빈칸 행이 하나 생겨요 → UNIQUE(FILTER(B2:B1000,B2:B1000<>\"\"))","정렬하려면 바깥에 SORT(…, 2, -1)."],
+ rel:["a_cross_table","groupby","a_let"]});
+A({id:"a_cross_table",cat:"sum",title:"부서 × 월 교차 합계표를 수식으로",
+ from:["sumifs","c_sum_month","c_sum_by_dept"],ask:"부서별·월별 교차표를 수식으로 만들려면?",
+ k:["교차표","크로스탭","부서별 월별","행열 합계","2차원 합계","sumifs 펼치기"],
+ f:"세로: =UNIQUE(부서열)   가로: =TRANSPOSE(UNIQUE(월열))\n값:   =SUMIFS(금액열, 부서열, 세로칸#, 월열, 가로칸#)",
+ d:"세로 목록과 가로 목록을 펼쳐 두고, SUMIFS 조건에 두 목록을 # 로 넣으면 표 전체가 한 번에 채워져요. # = 펼쳐진 결과 전체.",
+ ex:{c:["부서","월","금액"],r:[["영업","1월",100],["인사","1월",50],["영업","2월",120],["영업","1월",30]],
+   calc:[["E2","=UNIQUE(A2:A5)","영업 / 인사","s"],["F1","=TRANSPOSE(UNIQUE(B2:B5))","1월 | 2월","s"],["F2","=SUMIFS(C2:C5,A2:A5,E2#,B2:B5,F1#)","영업 130·120 / 인사 50·0","s"]]},
+ tips:["피벗이 편하면 피벗으로, 양식이 고정된 보고서 안에 넣을 땐 이 방식이 좋아요.","최신 365에 PIVOTBY가 있으면 한 줄로도 돼요."],rel:["a_summary_one","k_pivot"]});
+A({id:"a_or_sum",cat:"sum",title:"'영업 또는 생산' 합계 (조건 여러 값 중 하나)",
+ from:["sumifs","sumif"],ask:"부서가 A 또는 B인 것 합계는?",
+ k:["또는 합계","or 합계","여러 값 합계","sumifs 또는","중괄호","배열 상수"],
+ f:'=SUM(SUMIFS(금액열, 부서열, {"영업","생산"}))',
+ d:"조건 자리에 {\"영업\",\"생산\"}처럼 중괄호로 여러 값을 넣으면 각각 합계를 낸 뒤 SUM이 더해요.",
+ ex:ex(DEPT,[["E2",'=SUM(SUMIFS(C2:C5,B2:B5,{"영업","생산"}))',"890"],["E3",'=SUM(COUNTIFS(B2:B5,{"영업","생산"}))',"3 (개수도 같은 방식)"]]),
+ tips:["값 목록이 칸에 있으면 중괄호 대신 범위: =SUM(SUMIFS(C:C,B:B,H2:H4))"],rel:["sumifs"]});
+A({id:"a_running_group",cat:"sum",title:"부서별(사람별) 누계",
+ from:["c_cumulative"],ask:"부서마다 따로 누계를 내려면?",
+ k:["그룹별 누계","부서별 누적","사람별 누계","조건 누계"],
+ f:"=SUMIFS($B$2:B2, $A$2:A2, A2)",
+ d:"누계 범위처럼 시작만 고정하고, 같은 부서인 것만 더해요.",
+ ex:{c:["부서","금액"],r:[["영업",100],["인사",50],["영업",120]],calc:[["C2","=SUMIFS($B$2:B2,$A$2:A2,A2)","100"],["C3","=SUMIFS($B$2:B3,$A$2:A3,A3)","50"],["C4","=SUMIFS($B$2:B4,$A$2:A4,A4)","220"]]},
+ rel:["c_cumulative","c_dup_nth"]});
+
+/* ===== 비교 심화 ===== */
+A({id:"a_diff_list",cat:"compare",pop:1,title:"두 표 비교해서 차이 있는 사람만 목록으로 (한 번에)",
+ from:["c_diff_two","c_list_diff"],ask:"차액 있는 사람만 바로 목록으로 뽑으려면?",
+ k:["차이만 추출","차액 목록","검증 목록","차이 있는 사람","불일치 목록","대사 자동"],
+ f:'=LET(p, XLOOKUP(사번열, 비교사번열, 비교금액열, 0), d, 금액열-p, FILTER(HSTACK(사번열, d), d<>0, "차이 없음"))',
+ d:"XLOOKUP으로 상대 표 금액을 한꺼번에 가져와(p), 차액(d)을 구하고, 0이 아닌 사람만 사번·차액으로 뽑아요. 수식 하나라 아래로 복사할 필요가 없어요.",
+ ex:{c:["사번","당월","","사번","전월"],r:[[1001,300,null,1001,300],[1002,320,null,1002,310],[1003,280,null,1004,290]],
+   calc:[["G2",'=LET(p,XLOOKUP(A2:A4,D2:D4,E2:E4,0),d,B2:B4-p,FILTER(HSTACK(A2:A4,d),d<>0,"차이 없음"))',"1002 | 10 / 1003 | 280","s"]]},
+ tips:["상대 표에 없는 사람은 0으로 가져와져 금액 전체가 차액으로 나와요 — 빠진 사람 확인은 '두 명단 비교'.","범위를 넉넉히 잡을 땐 빈 사번을 조건에서 빼세요: (d<>0)*(A2:A1000<>\"\")"],
+ rel:["c_diff_two","c_list_diff","a_let"]});
+A({id:"a_dup_two_cols",cat:"compare",title:"두 열을 합쳐서 중복 확인 (사번 + 월)",
+ from:["c_dup_mark","k_cond_dup"],ask:"사번과 월이 둘 다 같은 것만 중복으로 보려면?",
+ k:["두 열 중복","복합 중복","사번 월 중복","조합 중복","중복 지급"],
+ f:'=IF(COUNTIFS(사번열, 사번, 월열, 월)>1, "중복", "")',
+ d:"사번만 보면 매달 중복이라 의미가 없죠. 사번+월 조합이 두 번 나온 것만 표시해요 (중복 지급 확인).",
+ ex:{c:["사번","월"],r:[[1001,"1월"],[1001,"2월"],[1001,"1월"]],calc:[["C2",'=IF(COUNTIFS($A$2:$A$4,A2,$B$2:$B$4,B2)>1,"중복","")',"중복"],["C3",'=IF(COUNTIFS($A$2:$A$4,A3,$B$2:$B$4,B3)>1,"중복","")',"(빈칸)"]]},
+ tips:["색으로 보려면 조건부 서식 → 수식: =COUNTIFS($A:$A,$A2,$B:$B,$B2)>1"],rel:["c_dup_mark","k_cond_formula"]});
+
+/* ===== 수식 정리 ===== */
+A({id:"a_let",cat:"logic",title:"LET으로 긴 수식 짧게 정리하기",
+ from:["let","iferror"],ask:"같은 계산이 수식에 여러 번 나오면?",
+ k:["let 활용","수식 정리","변수","반복 줄이기","긴 수식"],
+ f:"=LET(이름1, 값1, 이름2, 값2, 최종계산)",
+ d:"수식 안에서 반복되는 덩어리에 이름을 붙여요. 읽기 쉬워지고 계산도 한 번만 해서 빨라져요.",
+ ex:ex(DEPT,[["E2",'=LET(n,COUNTIF(B2:B5,"영업"),s,SUMIF(B2:B5,"영업",C2:C5),IF(n=0,0,s/n))',"290 (영업 평균)"]]),
+ tips:["이름은 영문·한글 모두 되지만 A1, B2처럼 셀 주소 같은 이름은 안 돼요.","IFERROR로 긴 수식을 두 번 쓰던 걸 LET으로 한 번만 쓸 수 있어요."],rel:["a_lambda","a_diff_list"]});
+A({id:"a_lambda",t:"k",cat:"logic",title:"LAMBDA로 나만의 함수 만들기 (=원절사(B2))",
+ from:["let","c_won_cut"],ask:"자주 쓰는 수식을 내 함수로 만들려면?",
+ k:["람다","lambda","나만의 함수","사용자 함수","함수 만들기","이름 관리자 함수"],
+ d:"자주 쓰는 계산을 이름 붙인 함수로 등록하면 파일 안 어디서든 =원절사(B2)처럼 써요. 팀 파일 수식을 통일하기 좋아요.",
+ steps:["수식 탭 → 이름 관리자 → 새로 만들기","이름: 원절사","참조 대상: =LAMBDA(x, ROUNDDOWN(x,-1)) → 확인","셀에서 =원절사(B2) → 10원 미만 버림","인자 두 개 예: 이름 일할, 참조 대상 =LAMBDA(월급,근무일,기준일, ROUNDDOWN(월급/DAY(EOMONTH(기준일,0))*근무일,-1))"],
+ ex:{c:["금액"],r:[[123456]],calc:[["B2","=원절사(A2)","123,450 (이름 등록 후)","n"]]},
+ tips:["그 파일 안에서만 쓸 수 있어요. 다른 파일에서 쓰려면 이름 관리자로 다시 등록.","등록 전에 셀에서 =LAMBDA(x,ROUNDDOWN(x,-1))(A2) 로 미리 테스트해 볼 수 있어요."],rel:["a_let","k_name_define"]});
+A({id:"a_merge_clean",cat:"dyn",title:"월별 시트 취합하면서 빈 줄 자동 제거",
+ from:["vstack","c_merge_sheets"],ask:"시트를 합칠 때 빈 줄을 빼려면?",
+ k:["취합 빈줄","시트 합치기 빈칸 제거","vstack filter","월별 취합 자동"],
+ f:"=LET(d, VSTACK('1월:12월'!A2:F300), FILTER(d, CHOOSECOLS(d,1)<>\"\"))",
+ d:"시트마다 넉넉히 잡은 범위를 이어 붙인 뒤(d), 첫 열(사번)이 빈 줄은 빼요. 새 달 시트를 1월~12월 사이에 넣으면 자동 포함.",
+ tips:["시트 이름 순서가 중요해요 — '1월:12월'은 탭 위치 기준.","어느 달 데이터인지 열을 붙이려면 시트마다 월 열을 미리 만들어 두세요."],rel:["c_merge_sheets","a_pq_intro"]});
+
+/* ===== 피벗 심화 ===== */
+A({id:"a_pivot_layout",t:"k",cat:"analyze",pop:1,title:"피벗을 일반 표처럼 보기 (테이블 형식·레이블 반복)",
+ from:["k_pivot"],ask:"피벗 결과를 다른 데 붙여넣기 좋게 바꾸려면?",
+ k:["피벗 표 형식","테이블 형식","레이블 반복","피벗 부분합 없애기","피벗 정리","피벗 복사"],
+ d:"기본 피벗은 들여쓰기 모양이라 복사해서 쓰기 불편해요. 표 형식으로 바꾸면 열마다 값이 채워진 일반 표처럼 돼요.",
+ steps:["피벗 안 클릭 → 디자인 탭 → 보고서 레이아웃 → '테이블 형식으로 표시'","같은 메뉴 → '모든 항목 레이블 반복' (빈칸 없이 부서명 채워짐)","디자인 → 부분합 → '부분합 표시 안 함'","디자인 → 총합계 → 필요 없으면 '해제'"],
+ tips:["값만 다른 파일로 보낼 땐 피벗 복사 → 값 붙여넣기."],rel:["k_pivot","a_pivot_show_as"]});
+A({id:"a_pivot_show_as",t:"k",cat:"analyze",title:"피벗에서 구성비(%)·전월 대비 차이 보기",
+ from:["k_pivot","c_ratio","c_growth"],ask:"피벗에서 비율이나 전월 대비를 보려면?",
+ k:["피벗 비율","피벗 구성비","피벗 전월 대비","값 표시 형식","피벗 퍼센트","피벗 증감"],
+ d:"수식을 따로 안 만들어도 '값 표시 형식'만 바꾸면 비율·차이를 보여줘요.",
+ steps:["값 영역에 같은 필드(예: 금액)를 한 번 더 끌어 넣기 (합계 2개)","두 번째 값에서 오른쪽 클릭 → 값 표시 형식","'총합계 비율' → 전체 중 몇 %","'열 합계 비율' → 월마다 부서 구성비","'[기준값]과의 차이' → 기준 필드: 월, 기준 항목: (이전) → 전월 대비 증감","'[기준값]에 대한 비율의 차이' → 전월 대비 증감률"],
+ tips:["필드 이름을 '금액 합계2' 대신 '구성비'처럼 바꿔 두면 보기 좋아요 (값 필드 설정에서)."],rel:["a_pivot_layout","a_pivot_slicer"]});
+A({id:"a_pivot_slicer",t:"k",cat:"analyze",title:"슬라이서로 버튼 클릭 필터 + 숫자 더블클릭으로 원본 확인",
+ from:["k_pivot"],ask:"피벗을 버튼으로 거르고 숫자 근거를 확인하려면?",
+ k:["슬라이서","피벗 필터 버튼","피벗 원본 확인","드릴다운","더블클릭 상세","피벗 검증"],
+ d:"슬라이서는 부서·월 버튼을 눌러 피벗을 거르는 기능이에요. 숫자를 더블클릭하면 그 숫자를 만든 원본 행만 새 시트로 뽑혀서 검증할 때 좋아요.",
+ steps:["피벗 안 클릭 → 피벗 테이블 분석 탭 → 슬라이서 삽입","거를 필드(부서, 월) 체크 → 확인 → 버튼 클릭으로 필터 (Ctrl 누르고 여러 개)","날짜 필드는 '시간 표시 막대 삽입'으로 기간 드래그","합계 숫자 더블클릭 → 새 시트에 해당 원본 행 목록 (확인 후 시트 삭제)"],
+ tips:["슬라이서 하나를 여러 피벗에 연결: 슬라이서 오른쪽 클릭 → 보고서 연결."],rel:["a_pivot_layout","a_pivot_getpivotdata"]});
+A({id:"a_pivot_calc",t:"k",cat:"analyze",title:"피벗에 계산 필드 추가 (1인당 금액 등)",
+ from:["k_pivot"],ask:"피벗 안에서 직접 계산 열을 만들려면?",
+ k:["계산 필드","피벗 계산","피벗 수식","1인당","피벗 나누기"],
+ d:"원본에 없는 계산 열을 피벗 안에 만들어요. 예: 지급액 ÷ 인원.",
+ steps:["원본에 인원 계산용 열(값 1) 을 미리 만들어 두기","피벗 안 클릭 → 피벗 테이블 분석 → 필드, 항목 및 집합 → 계산 필드","이름: 1인당, 수식: =지급액/인원 → 추가 → 확인"],
+ tips:["계산 필드는 '합계끼리' 계산해요 (행별 계산 후 합계가 아님) — 단가×수량 같은 건 원본에 열을 만들어야 정확해요."],rel:["a_pivot_show_as"]});
+A({id:"a_pivot_getpivotdata",t:"k",cat:"fix",title:"피벗 셀을 클릭하면 이상한 수식(GETPIVOTDATA)이 생길 때",
+ from:["k_pivot"],ask:"피벗 숫자를 참조하면 수식이 길게 생기는 이유는?",
+ k:["getpivotdata","피벗 참조","피벗 수식 이상","피벗 셀 참조","긴 수식 생김"],
+ d:"피벗 안 칸을 클릭해 참조하면 엑셀이 GETPIVOTDATA를 자동으로 넣어요. 아래로 복사해도 같은 값만 나와서 당황스럽죠.",
+ steps:["피벗 안 클릭 → 피벗 테이블 분석 탭 → 맨 왼쪽 '옵션' 옆 ▼","'GetPivotData 생성' 체크 해제","이제 클릭하면 =B5 같은 일반 참조로 들어가요"],
+ tips:["반대로 피벗 모양이 바뀌어도 정확한 값을 가져와야 할 땐 GETPIVOTDATA가 오히려 안전해요."],rel:["a_pivot_slicer"]});
+
+/* ===== 파워 쿼리 입문 ===== */
+A({id:"a_pq_intro",t:"k",cat:"clean",title:"파워 쿼리 입문 — 매달 같은 정리 작업 자동 반복",
+ from:["k_powerquery","k_text_to_columns","c_clean_space"],ask:"매달 똑같이 하는 정리 작업을 자동으로 하려면?",
+ k:["파워쿼리","파워 쿼리","power query","자동 정리","반복 작업","매달 정리","새로 고침"],
+ d:"매달 시스템에서 내려받은 파일을 열 지우기 → 공백 정리 → 형식 바꾸기 하는 순서를 한 번 기록해 두면, 다음 달엔 원본만 바꾸고 '새로 고침' 한 번으로 똑같이 정리돼요. 수식이 없어요.",
+ steps:["원본 데이터 안 클릭 → 데이터 탭 → '테이블/범위에서' (표로 만들지 물으면 확인)","파워 쿼리 편집기가 열리면: 필요 없는 열 선택 → 오른쪽 클릭 → 제거","사번 열 선택 → 변환 탭 → 서식 → '공백 제거'","열 머리글 왼쪽 아이콘(ABC/123) 클릭 → 텍스트·정수·날짜로 형식 지정","홈 → '닫기 및 로드' → 정리된 결과가 새 시트에 생김","다음 달: 원본 표에 새 데이터 붙여넣기 → 데이터 탭 → '모두 새로 고침'"],
+ tips:["편집기 오른쪽 '적용된 단계'에 한 작업이 순서대로 기록돼요 — 잘못한 단계는 X로 지우면 돼요.","원본은 그대로 두고 결과만 새로 만들어서 안전해요.","여러 파일 합치기는 '폴더 안 엑셀 파일 여러 개 합치기' 항목 참고."],
+ rel:["k_powerquery","a_merge_clean"]});
+})();
+
+/* 여러 칸에 펼쳐지는 결과 — "항목id|셀": [[행1...],[행2...]] */
+window.EXCEL_SPILL = {
+ "choosecols|E1":[["사번","부서"],[1001,"영업"],[1002,"인사"],[1003,"생산"]],
+ "take|E2":[[1001,"김하늘","영업"],[1002,"이바다","인사"]],
+ "take|E5":[[1003,"박산","생산"]],
+ "drop|E1":[[1001,"김하늘","영업"],[1002,"이바다","인사"],[1003,"박산","생산"]],
+ "transpose|E1":[["1월",10],["2월",12],["3월",15]],
+ "textsplit|B2":[["영업","인사","생산"]],
+ "filter|E2":[["김하늘","영업",300],["박산","영업",280]],
+ "filter|E5":[["김하늘"]],
+ "unique|E2":[["영업"],["인사"],["생산"]],
+ "sort|E2":[["이바다","인사",320],["최들","생산",310],["김하늘","영업",300],["박산","영업",280]],
+ "sortby|E2":[["이바다"],["최들"],["김하늘"],["박산"]],
+ "sequence|A2":[[1],[2],[3],[4],[5]],
+ "groupby|E2":[["생산",310],["영업",580],["인사",320],["합계",1210]],
+ "c_find_name|G2":[["박산","생산"]],
+ "c_list_diff|E2":[[1002],[1005]],
+ "c_list_diff|F2":[[1004]],
+ "c_list_both|D2":[[1001],[1003]],
+ "c_sum_by_dept|E2":[["영업"],["인사"],["생산"]],
+ "c_top_n|E2":[["이바다","인사",320],["최들","생산",310]],
+ "c_filter_rows|E2":[["김하늘","영업",300],["박산","영업",280],["최들","생산",310]],
+ "a_xl_multi_rows|E2":[["김하늘"],["박산"]],
+ "a_xl_multi_rows|G2":[["김하늘","영업",300],["박산","영업",280]],
+ "a_xl_multi_cols|E2":[["이바다","인사"]],
+ "a_xl_multi_keys|F2":[["박산"],["김하늘"],["없음"]],
+ "a_filter_and_or|F2":[["김하늘"],["박산"]],
+ "a_filter_and_or|G2":[["이바다"],["최들"]],
+ "a_filter_and_or|H2":[["이바다"],["박산"]],
+ "a_filter_date|E2":[["이바다"]],
+ "a_filter_contains|D2":[["김하늘"],["박산"]],
+ "a_filter_cols_sort|F2":[["이바다",350],["김하늘",300],["박산",280]],
+ "a_topn_group|F2":[["이바다","영업","대리",350],["김하늘","영업","사원",300]],
+ "a_sort_unique_filter|E2":[[1001],[1003]],
+ "a_summary_one|E2":[["영업",580],["인사",320],["생산",310]],
+ "a_summary_one|E6":[["영업",580,2],["인사",320,1],["생산",310,1]],
+ "a_cross_table|E2":[["영업"],["인사"]],
+ "a_cross_table|F1":[["1월","2월"]],
+ "a_cross_table|F2":[[130,120],[50,0]],
+ "a_diff_list|G2":[[1002,10],[1003,280]]
+};
+
+/* 예시 시각화 엔진 — 표 안 결과 표시, 참조 범위 색칠, 찾은 행 강조, 단계별 재생 */
+window.XLViz=(function(){
+"use strict";
+/* ---------- 주소 ---------- */
+function colIdx(s){var n=0;for(var i=0;i<s.length;i++)n=n*26+(s.charCodeAt(i)-64);return n-1;}
+function colName(i){var s="";i++;while(i>0){var m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;}
+function A(c,r){return colName(c)+r;}
+function pcell(s){var m=/^\$?([A-Z]{1,2})\$?(\d+)$/.exec(s);return m?{c:colIdx(m[1]),r:+m[2]}:null;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+/* ---------- 값 변환 ---------- */
+var D0=Date.UTC(1899,11,30);
+function serial(y,m,d){return Math.round((Date.UTC(y,m-1,d)-D0)/864e5);}
+function fromSerial(n){var d=new Date(D0+n*864e5);return d.getUTCFullYear()+"-"+("0"+(d.getUTCMonth()+1)).slice(-2)+"-"+("0"+d.getUTCDate()).slice(-2);}
+function conv(v){ // 표에 적힌 날짜·시각 글자를 엑셀 숫자로
+  if(typeof v==="string"){
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v); if(m) return serial(+m[1],+m[2],+m[3]);
+    m=/^(\d{1,2}):(\d{2})$/.exec(v); if(m) return (+m[1]*60+ +m[2])/1440;
+    if(v==="=NA()") return {err:"#N/A"};
+  }
+  return v==null?null:v;
+}
+function isNum(v){return typeof v==="number"&&isFinite(v);}
+function show(v){
+  if(v==null) return "";
+  if(typeof v==="object"&&v.err) return v.err;
+  if(typeof v==="boolean") return v?"TRUE":"FALSE";
+  if(typeof v==="number"&&Math.abs(v)>=10000&&Math.abs(v)<1e9) return v.toLocaleString();
+  return String(v);
+}
+
+/* ---------- 토큰 ---------- */
+var ID=/^[A-Za-z_\u3131-\uD7A3][A-Za-z0-9_.\u3131-\uD7A3]*/;
+function tokenize(f){
+  var s=f.charAt(0)==="="?f.slice(1):f, i=0, out=[], m;
+  while(i<s.length){
+    var ch=s[i], rest=s.slice(i);
+    if(ch===" "||ch==="\n"){out.push({t:"ws",raw:ch});i++;continue;}
+    if(ch==='"'){var j=i+1,v="";while(j<s.length){if(s[j]==='"'){if(s[j+1]==='"'){v+='"';j+=2;continue;}break;}v+=s[j];j++;}
+      out.push({t:"str",v:v,raw:s.slice(i,j+1)});i=j+1;continue;}
+    if(ch==="'"){var q=s.indexOf("'",i+1);var tail=/^![\$A-Z0-9:]+#?/.exec(s.slice(q+1));var raw=s.slice(i,q+1+(tail?tail[0].length:0));
+      out.push({t:"ext",raw:raw});i+=raw.length;continue;}
+    if((m=/^\$?[A-Z]{1,2}\$?\d+(?::\$?[A-Z]{1,2}\$?\d+)?#?/.exec(rest)) && !/^[A-Za-z0-9_.(!]/.test(s.charAt(i+m[0].length))){
+      var r=m[0], sp=r.slice(-1)==="#"; if(sp) r=r.slice(0,-1);
+      var pr=r.split(":"), a=pcell(pr[0]), b=pr[1]?pcell(pr[1]):a;
+      out.push({t:sp?"spill":"ref",raw:m[0],c1:Math.min(a.c,b.c),r1:Math.min(a.r,b.r),c2:Math.max(a.c,b.c),r2:Math.max(a.r,b.r),key:m[0].replace(/\$/g,"")});
+      i+=m[0].length;continue;}
+    if((m=/^\$?([A-Z]{1,2}):\$?([A-Z]{1,2})(?![A-Za-z0-9(])/.exec(rest))){
+      out.push({t:"col",raw:m[0],c1:colIdx(m[1]),c2:colIdx(m[2]),key:m[0].replace(/\$/g,"")});i+=m[0].length;continue;}
+    if((m=/^\d+(\.\d+)?/.exec(rest))){out.push({t:"num",v:+m[0],raw:m[0]});i+=m[0].length;continue;}
+    if((m=ID.exec(rest))){
+      var nm=m[0], nx=s.charAt(i+nm.length);
+      if(nx==="!"){var t2=/^![\$A-Z0-9:]+#?/.exec(s.slice(i+nm.length));var raw2=nm+(t2?t2[0]:"!");out.push({t:"ext",raw:raw2});i+=raw2.length;continue;}
+      if(nx==="("){out.push({t:"fn",v:nm.toUpperCase(),raw:nm});i+=nm.length;continue;}
+      var up=nm.toUpperCase();
+      if(up==="TRUE"||up==="FALSE"){out.push({t:"bool",v:up==="TRUE",raw:nm});i+=nm.length;continue;}
+      out.push({t:"name",v:nm,raw:nm});i+=nm.length;continue;}
+    if((m=/^(<=|>=|<>)/.exec(rest))){out.push({t:"op",v:m[0],raw:m[0]});i+=2;continue;}
+    out.push({t:"op",v:ch,raw:ch});i++;
+  }
+  return out;
+}
+
+/* ---------- 파서 ---------- */
+function parse(tokens){
+  var tk=tokens.filter(function(t){return t.t!=="ws";}), p=0;
+  function peek(){return tk[p];} function isOp(v){var t=tk[p];return t&&t.t==="op"&&t.v===v;}
+  function eat(v){if(!isOp(v))throw "expect "+v;p++;}
+  function expr(){return cmp();}
+  function cmp(){var a=cat();while(peek()&&peek().t==="op"&&/^(=|<>|<|>|<=|>=)$/.test(peek().v)){var o=tk[p++].v;a={k:"bin",op:o,a:a,b:cat()};}return a;}
+  function cat(){var a=add();while(isOp("&")){p++;a={k:"bin",op:"&",a:a,b:add()};}return a;}
+  function add(){var a=mul();while(isOp("+")||isOp("-")){var o=tk[p++].v;a={k:"bin",op:o,a:a,b:mul()};}return a;}
+  function mul(){var a=un();while(isOp("*")||isOp("/")){var o=tk[p++].v;a={k:"bin",op:o,a:a,b:un()};}return a;}
+  function un(){if(isOp("-")){p++;return {k:"neg",a:un()};}if(isOp("+")){p++;return un();}var a=pow();if(isOp("%")){p++;a={k:"bin",op:"/",a:a,b:{k:"num",v:100}};}return a;}
+  function pow(){var a=prim();while(isOp("^")){p++;a={k:"bin",op:"^",a:a,b:prim()};}return a;}
+  function prim(){
+    var t=tk[p]; if(!t) throw "eof";
+    if(t.t==="num"){p++;return {k:"num",v:t.v};}
+    if(t.t==="str"){p++;return {k:"str",v:t.v};}
+    if(t.t==="bool"){p++;return {k:"bool",v:t.v};}
+    if(t.t==="ref"){p++;return {k:"range",t:t};}
+    if(t.t==="spill"){p++;return {k:"spill",t:t};}
+    if(t.t==="col"){p++;return {k:"col",t:t};}
+    if(t.t==="ext"){p++;return {k:"ext"};}
+    if(t.t==="name"){p++;return {k:"name",v:t.v};}
+    if(t.t==="fn"){p++;eat("(");var args=[];
+      if(isOp(")")){p++;return {k:"fn",n:t.v,args:args};}
+      while(true){
+        if(isOp(",")){args.push({k:"empty"});p++;continue;}
+        if(isOp(")")){args.push({k:"empty"});p++;break;}
+        args.push(expr());
+        if(isOp(",")){p++; if(isOp(")")){args.push({k:"empty"});p++;break;} continue;}
+        eat(")");break;
+      }
+      return {k:"fn",n:t.v,args:args};}
+    if(isOp("(")){p++;var e=expr();eat(")");return e;}
+    if(isOp("{")){p++;var rows=[[]];
+      while(!isOp("}")){var x=prim(); rows[rows.length-1].push(x.k==="neg"?-x.a.v:x.v);
+        if(isOp(",")){p++;} else if(isOp(";")){p++;rows.push([]);} }
+      p++;return {k:"arr",rows:rows};}
+    throw "bad token "+t.raw;
+  }
+  var e=expr(); if(p<tk.length) throw "trailing";
+  return e;
+}
+
+/* ---------- 계산 (원본 칸 추적 포함) ---------- */
+function Arr(v,cells){return {arr:true,v:v,cells:cells||v.map(function(r){return r.map(function(){return [];});})};}
+function sc(x){ if(x&&x.arr){ return x.v[0][0]; } return x; }
+function scCells(x){ return x&&x.arr?x.cells[0][0]:[]; }
+function toArr(x){ return x&&x.arr?x:Arr([[x]]); }
+function uniq(a){var o=[];a.forEach(function(x){if(o.indexOf(x)<0)o.push(x);});return o;}
+function num(v){ if(isNum(v)) return v; if(typeof v==="boolean") return v?1:0; if(v==null||v==="") return 0;
+  if(typeof v==="string"){var c=conv(v); if(isNum(c)) return c; var n=Number(v.replace(/,/g,"")); if(!isNaN(n)) return n;} throw "#VALUE!"; }
+function cmpv(a,b,op){
+  if(a!=null&&typeof a==="object"&&a.err) return a; if(b!=null&&typeof b==="object"&&b.err) return b;
+  if(a==null) a=isNum(b)?0:""; if(b==null) b=isNum(a)?0:"";
+  var r;
+  if(isNum(a)&&isNum(b)) r=a<b?-1:a>b?1:0;
+  else if(typeof a==="string"&&typeof b==="string"){var x=a.toLowerCase(),y=b.toLowerCase();r=x<y?-1:x>y?1:0;}
+  else if(typeof a===typeof b) r=a===b?0:(a<b?-1:1);
+  else { var ta=isNum(a)?0:typeof a==="string"?1:2, tb=isNum(b)?0:typeof b==="string"?1:2; r=ta<tb?-1:1; }
+  return op==="="?r===0:op==="<>"?r!==0:op==="<"?r<0:op===">"?r>0:op==="<="?r<=0:r>=0;
+}
+function bin(op,a,b){
+  var A1=toArr(a),B1=toArr(b);
+  var R=Math.max(A1.v.length,B1.v.length), C=Math.max(A1.v[0].length,B1.v[0].length);
+  var v=[],cells=[];
+  for(var i=0;i<R;i++){v.push([]);cells.push([]);
+    for(var j=0;j<C;j++){
+      var ai=A1.v.length===1?0:i, aj=A1.v[0].length===1?0:j, bi=B1.v.length===1?0:i, bj=B1.v[0].length===1?0:j;
+      var x=(A1.v[ai]||[])[aj], y=(B1.v[bi]||[])[bj], z;
+      if(x===undefined||y===undefined) z={err:"#N/A"};
+      else if(/^(=|<>|<|>|<=|>=)$/.test(op)) z=cmpv(x,y,op);
+      else if(op==="&") z=show2(x)+show2(y);
+      else { try{ var p=num(x),q=num(y); z=op==="+"?p+q:op==="-"?p-q:op==="*"?p*q:op==="/"?(q===0?{err:"#DIV/0!"}:p/q):Math.pow(p,q);}catch(e){z={err:"#VALUE!"};} }
+      v[i].push(z); cells[i].push(uniq(((A1.cells[ai]||[])[aj]||[]).concat(((B1.cells[bi]||[])[bj]||[]))));
+    }}
+  if(R===1&&C===1&&!(a&&a.arr)&&!(b&&b.arr)) return v[0][0];
+  return Arr(v,cells);
+}
+function show2(v){ if(v==null) return ""; if(typeof v==="boolean") return v?"TRUE":"FALSE"; return String(v); }
+function truthy(v){ if(v==null) return false; if(typeof v==="object") return false; if(typeof v==="string") return false; return !!v; }
+
+function Ctx(get,spill){ this.get=get; this.spill=spill; }
+function rangeArr(ctx,c1,r1,c2,r2){
+  var v=[],cells=[];
+  for(var r=r1;r<=r2;r++){v.push([]);cells.push([]);for(var c=c1;c<=c2;c++){v[v.length-1].push(conv(ctx.get(A(c,r))));cells[cells.length-1].push([A(c,r)]);}}
+  return Arr(v,cells);
+}
+function ev(n,ctx,env){
+  switch(n.k){
+    case "num": case "str": case "bool": return n.v;
+    case "empty": return undefined;
+    case "range": return rangeArr(ctx,n.t.c1,n.t.r1,n.t.c2,n.t.r2);
+    case "col": throw "col";
+    case "spill": var sp=ctx.spill(A(n.t.c1,n.t.r1)); if(!sp) throw "spill";
+      return rangeArr(ctx,n.t.c1,n.t.r1,n.t.c1+sp[0].length-1,n.t.r1+sp.length-1);
+    case "ext": throw "ext";
+    case "name": if(env&&(n.v.toLowerCase() in env)) return env[n.v.toLowerCase()]; throw "name";
+    case "arr": return Arr(n.rows.map(function(r){return r.slice();}));
+    case "neg": return bin("-",0,ev(n.a,ctx,env));
+    case "bin": return bin(n.op,ev(n.a,ctx,env),ev(n.b,ctx,env));
+    case "fn": var f=FN[n.n]; if(!f) throw "fn "+n.n; return f(n.args,ctx,env);
+  }
+  throw "node";
+}
+function flat(x){ // 1차원으로 (값, 칸)
+  var a=toArr(x), out=[];
+  a.v.forEach(function(row,i){row.forEach(function(v,j){out.push({v:v,cells:a.cells[i][j],i:i,j:j});});});
+  return out;
+}
+function wild(p){return new RegExp("^"+p.replace(/[.+^${}()|[\]\\]/g,"\\$&").replace(/~\*/g,"\u0001").replace(/\*/g,".*").replace(/\?/g,".").replace(/\u0001/g,"\\*")+"$","i");}
+function crit(v,c){ // SUMIF·COUNTIF 조건
+  if(c&&c.arr){ return flat(c).some(function(x){return crit(v,x.v);}); }
+  if(typeof c==="string"){
+    var m=/^(<=|>=|<>|<|>|=)?(.*)$/.exec(c), op=m[1]||"=", s=m[2];
+    var cv=conv(s); var n2=(typeof cv==="string"&&cv!==""&&!isNaN(Number(cv)))?Number(cv):cv;
+    if(op==="="&&typeof n2==="string"&&/[*?]/.test(n2)) return typeof v==="string"&&wild(n2).test(v);
+    if(op==="="&&n2==="") return v==null||v==="";
+    if(isNum(n2)){ if(!isNum(v)) return op==="<>"; return cmpv(v,n2,op); }
+    if(v==null) v=""; if(isNum(v)) return op==="<>";
+    return cmpv(String(v),n2,op);
+  }
+  if(c==null) return v==null||v==="";
+  return cmpv(v,c,"=")===true;
+}
+function arg(args,i,ctx,env,dflt){ if(!args[i]||args[i].k==="empty") return dflt; return ev(args[i],ctx,env); }
+/* 찾기 공통 */
+function findIdx(key,list,mode,dir){
+  var order=list.map(function(_,i){return i;}); if(dir===-1) order.reverse();
+  var scan=[], hit=-1, best=-1;
+  for(var q=0;q<order.length;q++){
+    var i=order[q], v=list[i].v; scan.push(i);
+    var ok;
+    if(mode===2&&typeof key==="string") ok=typeof v==="string"&&wild(key).test(v);
+    else ok=cmpv(v,key,"=")===true;
+    if(ok){hit=i;break;}
+    if(mode===-1&&isNum(v)&&isNum(key)&&v<key&&(best<0||v>list[best].v)) best=i;
+    if(mode===1&&isNum(v)&&isNum(key)&&v>key&&(best<0||v<list[best].v)) best=i;
+  }
+  if(hit<0&&best>=0){ hit=best; }
+  return {scan:scan,hit:hit};
+}
+function approxIdx(key,list){ var scan=[],hit=-1; for(var i=0;i<list.length;i++){scan.push(i); var v=list[i].v; if(cmpv(v,key,"<=")===true&&typeof v===typeof key) hit=i; else if(cmpv(v,key,">")===true) break;} return {scan:scan,hit:hit}; }
+function sliceAt(ret,vertical,idx){ // 가져올 범위에서 idx번째 줄(열)
+  var a=toArr(ret);
+  if(vertical) return Arr([a.v[idx]],[a.cells[idx]]);
+  return Arr(a.v.map(function(r){return [r[idx]];}),a.cells.map(function(r){return [r[idx]];}));
+}
+function xlookupCore(args,ctx,env){
+  var key=ev(args[0],ctx,env), look=toArr(ev(args[1],ctx,env)), ret=ev(args[2],ctx,env);
+  var mode=num(arg(args,4,ctx,env,0)), dir=num(arg(args,5,ctx,env,1));
+  var vertical=look.v.length>1||look.v[0].length===1, list=flat(look);
+  var keys=(key&&key.arr)?flat(key):[{v:key,cells:[]}];
+  var parts=keys.map(function(k){var r=findIdx(k.v,list,mode,dir); return {key:k,scan:r.scan,hit:r.hit};});
+  return {parts:parts,list:list,vertical:vertical,ret:ret,multi:!!(key&&key.arr&&flat(key).length>1)};
+}
+var FN={
+  DATE:function(a,c,e){return serial(num(sc(ev(a[0],c,e))),num(sc(ev(a[1],c,e))),num(sc(ev(a[2],c,e))));},
+  EOMONTH:function(a,c,e){var d=fromSerial(num(sc(ev(a[0],c,e)))).split("-"),m=+d[1]+num(sc(ev(a[1],c,e)));return serial(+d[0],m+1,1)-1;},
+  ISNUMBER:function(a,c,e){var x=ev(a[0],c,e); if(x&&x.arr) return Arr(x.v.map(function(r){return r.map(isNum);}),x.cells); return isNum(x);},
+  SEARCH:function(a,c,e){var f=sc(ev(a[0],c,e)),x=ev(a[1],c,e);
+    function one(t){var i=String(t==null?"":t).toLowerCase().indexOf(String(f).toLowerCase());return i<0?{err:"#VALUE!"}:i+1;}
+    if(x&&x.arr) return Arr(x.v.map(function(r){return r.map(one);}),x.cells); return one(x);},
+  ABS:function(a,c,e){return Math.abs(num(sc(ev(a[0],c,e))));},
+  COUNTIF:function(a,c,e){var r=flat(ev(a[0],c,e)),k=ev(a[1],c,e);
+    function cnt(cv){return r.filter(function(x){return crit(x.v,cv);}).length;}
+    if(k&&k.arr) return Arr(k.v.map(function(row){return row.map(cnt);}),k.cells); return cnt(k);},
+  SUMIF:function(a,c,e){var r=flat(ev(a[0],c,e)),k=ev(a[1],c,e),s=a[2]?flat(ev(a[2],c,e)):r;
+    function sm(cv){var t=0;r.forEach(function(x,i){if(crit(x.v,cv))t+=isNum(s[i].v)?s[i].v:0;});return t;}
+    if(k&&k.arr) return Arr(k.v.map(function(row){return row.map(sm);}),k.cells); return sm(k);},
+  UNIQUE:function(a,c,e){var r=flat(ev(a[0],c,e)),seen=[],v=[],cells=[];
+    r.forEach(function(x){var key=String(x.v).toLowerCase();if(seen.indexOf(key)<0){seen.push(key);v.push([x.v]);cells.push([x.cells]);}});return Arr(v,cells);},
+  HSTACK:function(a,c,e){var parts=a.map(function(n){return toArr(ev(n,c,e));}),R=Math.max.apply(null,parts.map(function(p){return p.v.length;})),v=[],cells=[];
+    for(var i=0;i<R;i++){v.push([]);cells.push([]);parts.forEach(function(p){(p.v[i]||p.v[0].map(function(){return {err:"#N/A"};})).forEach(function(x,j){v[i].push(x);cells[i].push((p.cells[i]||[])[j]||[]);});});}
+    return Arr(v,cells);},
+  MATCH:function(a,c,e){var key=sc(ev(a[0],c,e)),list=flat(ev(a[1],c,e)),t=num(arg(a,2,c,e,1));
+    var r=t===0?findIdx(key,list,typeof key==="string"&&/[*?]/.test(key)?2:0,1):approxIdx(key,list); return r.hit<0?{err:"#N/A"}:r.hit+1;},
+  XMATCH:function(a,c,e){var key=sc(ev(a[0],c,e)),list=flat(ev(a[1],c,e)),r=findIdx(key,list,num(arg(a,2,c,e,0)),num(arg(a,3,c,e,1)));return r.hit<0?{err:"#N/A"}:r.hit+1;},
+  INDEX:function(a,c,e){var R=toArr(ev(a[0],c,e)),ri=num(sc(ev(a[1],c,e))),ci=num(sc(arg(a,2,c,e,1)));
+    if(R.v.length===1&&!a[2]){ci=ri;ri=1;} var v=(R.v[ri-1]||[])[ci-1]; if(v===undefined) return {err:"#REF!"}; return Arr([[v]],[[R.cells[ri-1][ci-1]]]);},
+  XLOOKUP:function(a,c,e){var X=xlookupCore(a,c,e),out=[],cells=[];
+    X.parts.forEach(function(p){
+      if(p.hit<0){var nf=a[3]&&a[3].k!=="empty"?ev(a[3],c,e):{err:"#N/A"};var nfa=toArr(nf);out.push(nfa.v[0].slice());cells.push(nfa.cells[0].slice());return;}
+      var s=sliceAt(X.ret,X.vertical,p.hit); if(X.multi){out.push([s.v[0][0]]);cells.push([s.cells[0][0]]);} else {out=s.v;cells=s.cells;}
+    });
+    return Arr(out,cells);},
+  IFERROR:function(a,c,e){try{var x=ev(a[0],c,e); if(sc(x)&&typeof sc(x)==="object"&&sc(x).err) return ev(a[1],c,e); return x;}catch(er){throw er;}},
+  LET:function(a,c,e){var env=Object.create(e||null);for(var i=0;i+1<a.length;i+=2) env[a[i].v.toLowerCase()]=ev(a[i+1],c,env);return ev(a[a.length-1],c,env);}
+};
+
+/* ---------- 추적 (어느 칸을 보고, 어디서 찾았는지) ---------- */
+var LOOK={XLOOKUP:1,VLOOKUP:1,HLOOKUP:1,MATCH:1,XMATCH:1,INDEX:1};
+var COND={SUMIF:1,COUNTIF:1,AVERAGEIF:1,SUMIFS:1,COUNTIFS:1,AVERAGEIFS:1,MAXIFS:1,MINIFS:1,FILTER:1};
+var AGG={SUM:1,AVERAGE:1,MAX:1,MIN:1,COUNT:1,COUNTA:1,COUNTBLANK:1,MEDIAN:1,LARGE:1,SMALL:1};
+function candidates(node,letA,out){
+  if(!node||typeof node!=="object") return;
+  if(node.k==="fn"){
+    out.push({n:node,let:letA});
+    var la=node.n==="LET"?node.args:letA;
+    node.args.forEach(function(x){candidates(x,la,out);});
+  } else if(node.k==="bin"){candidates(node.a,letA,out);candidates(node.b,letA,out);}
+  else if(node.k==="neg") candidates(node.a,letA,out);
+}
+function letEnv(o,ctx){ // LET 이름 계산 (되는 데까지)
+  if(!o.let) return null; var env={},a=o.let;
+  for(var i=0;i+1<a.length;i+=2){ if(a[i].k!=="name") break; try{ env[a[i].v.toLowerCase()]=ev(a[i+1],ctx,env); }catch(x){ break; } }
+  return env;
+}
+function lookupTrace(n,ctx,env){
+  var a=n.args, parts=[];
+  if(n.n==="XLOOKUP"){
+    if(a[2]&&a[2].k==="fn"&&a[2].n==="XLOOKUP"){ var pre=lookupTrace(a[2],ctx,env); if(pre) pre.parts.forEach(function(p){p.ret=[];parts.push(p);}); }
+    var X=xlookupCore(a,ctx,env);
+    X.parts.forEach(function(p){
+      var ret=p.hit>=0?flat(sliceAt(X.ret,X.vertical,p.hit)).map(function(x){return x.cells;}).reduce(function(s,x){return s.concat(x);},[]):[];
+      parts.push({keyCells:p.key.cells,key:p.key.v,scan:p.scan.map(function(i){return {cells:X.list[i].cells,v:X.list[i].v};}),hit:p.hit>=0?X.list[p.hit].cells:null,ret:ret});
+    });
+    if(!X.multi&&X.parts[0].hit<0&&a[3]&&a[3].k==="fn"&&a[3].n==="XLOOKUP"){ var sub=lookupTrace(a[3],ctx,env); if(sub) parts=parts.concat(sub.parts); }
+  } else if(n.n==="VLOOKUP"||n.n==="HLOOKUP"){
+    var key=ev(a[0],ctx,env), T=toArr(ev(a[1],ctx,env)), k=num(sc(ev(a[2],ctx,env))), md=arg(a,3,ctx,env,true);
+    var v=n.n==="VLOOKUP", list=v?T.v.map(function(r,i){return {v:r[0],cells:T.cells[i][0]};}):T.v[0].map(function(x,j){return {v:x,cells:T.cells[0][j]};});
+    var exact=(md===false||md===0), kv=sc(key);
+    var r=exact?findIdx(kv,list,typeof kv==="string"&&/[*?]/.test(kv)?2:0,1):approxIdx(kv,list);
+    parts.push({keyCells:scCells(key),key:kv,scan:r.scan.map(function(i){return list[i];}),hit:r.hit>=0?list[r.hit].cells:null,
+      ret:r.hit>=0?(v?T.cells[r.hit][k-1]:T.cells[k-1][r.hit])||[]:[]});
+  } else if(n.n==="MATCH"||n.n==="XMATCH"){
+    var key2=ev(a[0],ctx,env), list2=flat(ev(a[1],ctx,env)), kv2=sc(key2);
+    var t=n.n==="MATCH"?num(arg(a,2,ctx,env,1)):0;
+    var r2=(n.n==="XMATCH"||t===0)?findIdx(kv2,list2,typeof kv2==="string"&&/[*?]/.test(kv2)?2:0,1):approxIdx(kv2,list2);
+    parts.push({keyCells:scCells(key2),key:kv2,scan:r2.scan.map(function(i){return list2[i];}),hit:r2.hit>=0?list2[r2.hit].cells:null,ret:[]});
+  } else if(n.n==="INDEX"){
+    [a[1],a[2]].forEach(function(x){ if(x&&x.k==="fn"&&(x.n==="MATCH"||x.n==="XMATCH")){var s=lookupTrace(x,ctx,env); if(s) parts=parts.concat(s.parts);} });
+    var pick=FN.INDEX(a,ctx,env); var pc=pick&&pick.arr?pick.cells[0][0]:[];
+    if(parts.length){ parts[parts.length-1].ret=pc; } else parts.push({keyCells:[],key:null,scan:[],hit:null,ret:pc,pick:true});
+  }
+  if(!parts.length) return null;
+  return {type:"lookup",parts:parts};
+}
+function condTrace(n,ctx,env){
+  var a=n.args, pairs=[], tgt=null;
+  if(n.n==="FILTER"){
+    var arr=toArr(ev(a[0],ctx,env)), cond=toArr(ev(a[1],ctx,env));
+    var rows=[];
+    var vert=cond.v.length>1||arr.v.length===cond.v.length;
+    var N=vert?cond.v.length:cond.v[0].length;
+    for(var i=0;i<N;i++){
+      var cv=vert?cond.v[i][0]:cond.v[0][i], cc=vert?cond.cells[i][0]:cond.cells[0][i];
+      var tc=vert?(arr.cells[i]||[]).reduce(function(s,x){return s.concat(x);},[]):arr.cells.map(function(r){return r[i]||[];}).reduce(function(s,x){return s.concat(x);},[]);
+      rows.push({cells:cc,ok:truthy(cv),tgt:tc,vals:cc.map(function(ad){return conv(ctx.get(ad));})});
+    }
+    return {type:"cond",rows:rows};
+  }
+  if(n.n==="SUMIF"||n.n==="COUNTIF"||n.n==="AVERAGEIF"){ pairs=[[0,1]]; if(n.n!=="COUNTIF") tgt=a[2]&&a[2].k!=="empty"?2:0; }
+  else if(n.n==="COUNTIFS"){ for(var j=0;j+1<a.length;j+=2) pairs.push([j,j+1]); }
+  else { tgt=0; for(var j2=1;j2+1<a.length;j2+=2) pairs.push([j2,j2+1]); }
+  var ranges=pairs.map(function(p){return {r:flat(ev(a[p[0]],ctx,env)),c:ev(a[p[1]],ctx,env)};});
+  var tl=tgt!=null?flat(ev(a[tgt],ctx,env)):null;
+  var rows2=[];
+  for(var k=0;k<ranges[0].r.length;k++){
+    var cells=[],ok=true,vals=[];
+    ranges.forEach(function(R){var x=R.r[k]; if(!x){ok=false;return;} cells=cells.concat(x.cells); vals.push(x.v); if(!crit(x.v,R.c)) ok=false;});
+    rows2.push({cells:uniq(cells),ok:ok,tgt:tl&&tl[k]?tl[k].cells:[],vals:vals});
+  }
+  return {type:"cond",rows:rows2};
+}
+function ifTrace(n,ctx,env){
+  var a=n.args;
+  if(n.n==="IF"){ var c=ev(a[0],ctx,env), ok=truthy(sc(c)); var br=a[ok?1:2]; var bc=[];
+    try{ var bv=br&&br.k!=="empty"?ev(br,ctx,env):null; bc=bv&&bv.arr?flat(bv).reduce(function(s,x){return s.concat(x.cells);},[]):[]; }catch(x){}
+    return {type:"if",steps:[{cells:scCells(c).length?scCells(c):flat(c).reduce(function(s,x){return s.concat(x.cells);},[]),ok:ok}],ret:bc};}
+  var steps=[];
+  for(var i=0;i+1<a.length;i+=2){var cv=ev(a[i],ctx,env),ok2=truthy(sc(cv)); steps.push({cells:scCells(cv),ok:ok2}); if(ok2) break;}
+  return {type:"if",steps:steps,ret:[]};
+}
+function aggTrace(n,ctx,env){
+  var cells=[];
+  (function walk(x){ if(!x||typeof x!=="object") return;
+    if(x.k==="range"||x.k==="spill"){ flat(ev(x,ctx,env)).forEach(function(f){ cells=cells.concat(f.cells); }); return; }
+    if(x.k==="fn") x.args.forEach(walk); else if(x.k==="bin"){walk(x.a);walk(x.b);} else if(x.k==="neg") walk(x.a);
+  })(n);
+  cells=uniq(cells);
+  if(!cells.length) return null;
+  return {type:"agg",cells:cells};
+}
+function trace(f,ctx){
+  var ast; try{ ast=parse(tokenize(f)); }catch(e){ return null; }
+  var cs=[]; candidates(ast,null,cs);
+  var tiers=[function(n){return LOOK[n]||COND[n];},function(n){return n==="IF"||n==="IFS";},function(n){return AGG[n];}];
+  for(var t=0;t<tiers.length;t++){
+    for(var i=0;i<cs.length;i++){
+      var o=cs[i]; if(!tiers[t](o.n.n)) continue;
+      try{
+        var env=letEnv(o,ctx);
+        var r=LOOK[o.n.n]?lookupTrace(o.n,ctx,env):COND[o.n.n]?condTrace(o.n,ctx,env):(o.n.n==="IF"||o.n.n==="IFS")?ifTrace(o.n,ctx,env):aggTrace(o.n,ctx,env);
+        if(r) return r;
+      }catch(e){}
+    }
+  }
+  return null;
+}
+
+/* ---------- 결과값 정리 ---------- */
+function parseResult(txt){
+  var t=String(txt), note="", v=t;
+  var m=/^(.*?)\s+(\(.*\)|→.*)$/.exec(t);
+  if(m){ v=m[1]; note=m[2].replace(/^\(|\)$/g,"").replace(/^→\s*/,""); }
+  if(v==="(빈칸)"){ v=""; note=note||"빈칸"; }
+  return {v:v,note:note};
+}
+
+/* ---------- 화면 ---------- */
+var PAL=["#2563eb","#9333ea","#0d9488","#ea580c","#db2777","#65a30d"];
+var TINT=["rgba(37,99,235,.10)","rgba(147,51,234,.10)","rgba(13,148,136,.12)","rgba(234,88,12,.10)","rgba(219,39,119,.10)","rgba(101,163,13,.12)"];
+function mount(root,item,opts){
+  var ex=item.ex, SP=window.EXCEL_SPILL||{};
+  var calcs=(ex.calc||[]).map(function(k){
+    var cell=pcell(k[0]), sp=SP[item.id+"|"+k[0]], flag=k[3]||"";
+    var vals=null, note="";
+    if(sp) vals=sp; else if(flag!=="s"){ var pr=parseResult(k[2]); vals=[[pr.v]]; note=pr.note; }
+    else note=k[2];
+    var toks=tokenize(k[1]);
+    return {cell:cell,addr:k[0],f:k[1],txt:k[2],vals:vals,note:note,toks:toks,flag:flag};
+  });
+  // 표 크기
+  var maxC=ex.c.length-1, maxR=(ex.r||[]).length+1;
+  calcs.forEach(function(k){
+    if(k.cell){ var w=k.vals?k.vals[0].length:1, h=k.vals?k.vals.length:1; maxC=Math.max(maxC,k.cell.c+w-1); maxR=Math.max(maxR,k.cell.r+h-1); }
+    k.toks.forEach(function(t){ if(t.t==="ref"){ maxC=Math.max(maxC,t.c2); maxR=Math.max(maxR,t.r2); } });
+  });
+  var baseR=(ex.r||[]).length+1;
+  calcs.forEach(function(k){ if(k.cell){ baseR=Math.max(baseR,k.cell.r+(k.vals?k.vals.length:1)-1); } });
+  maxC=Math.min(maxC,25); maxR=Math.min(maxR,Math.max(baseR,6));
+  var base={};
+  ex.c.forEach(function(h,j){ base[A(j,1)]=h; });
+  (ex.r||[]).forEach(function(row,i){ row.forEach(function(v,j){ if(v!=null) base[A(j,i+2)]=v; }); });
+
+  var h='<div class="xv"><div class="grid-wrap"><table class="grid xg"><tr><th></th>';
+  for(var c=0;c<=maxC;c++) h+='<th>'+colName(c)+'</th>';
+  h+='</tr>';
+  for(var r=1;r<=maxR;r++){
+    h+='<tr><th>'+r+'</th>';
+    for(var c2=0;c2<=maxC;c2++){ var ad=A(c2,r); h+='<td data-a="'+ad+'"'+(r===1&&c2<ex.c.length?' class="hd"':'')+'></td>'; }
+    h+='</tr>';
+  }
+  h+='</table></div><div class="xcap" aria-live="polite"></div><div class="xcalcs">';
+  calcs.forEach(function(k,i){
+    h+='<div class="calc xc" data-i="'+i+'"><span class="cell">'+esc(k.addr)+'</span><code>'+fmlHtml(k)+'</code><span class="to">→</span><span class="res">'+esc(k.txt)+'</span>'+
+      '<span class="xbtns"><button class="btn xplay" title="단계별로 보기">▶ 재생</button><button class="btn" data-copy="'+esc(k.f)+'">복사</button></span></div>';
+  });
+  h+='</div>';
+  if(ex.note) h+='<div class="hint" style="margin:6px 0 0">'+esc(ex.note)+'</div>';
+  h+='</div>';
+  root.innerHTML=h;
+  var cellsEl={}; root.querySelectorAll("td[data-a]").forEach(function(td){cellsEl[td.getAttribute("data-a")]=td;});
+  var cap=root.querySelector(".xcap"), timer=null, sel=-1;
+
+  function fmlHtml(k){
+    var keys=[], out="";
+    k.toks.forEach(function(t){
+      if(t.t==="ref"||t.t==="spill"||t.t==="col"){ var key=t.key.replace("#",""); var n=keys.indexOf(key); if(n<0){keys.push(key);n=keys.length-1;} out+='<span class="fr" style="color:'+PAL[n%PAL.length]+'">'+esc(t.raw)+'</span>'; }
+      else out+=esc(t.raw);
+    });
+    k.keys=keys; return out;
+  }
+  function anchorCalc(ad){ for(var i=0;i<calcs.length;i++) if(calcs[i].addr===ad&&calcs[i].vals) return calcs[i]; return null; }
+  function stop(){ if(timer){clearTimeout(timer);timer=null;} root.classList.remove("playing"); }
+  function paintBase(k){
+    // 값: 원본 + (선택 수식이 참조하는) 다른 결과
+    var vals={}, cls={};
+    Object.keys(base).forEach(function(a){vals[a]=base[a];});
+    var deps=[];
+    k.toks.forEach(function(t){
+      if(t.t!=="ref"&&t.t!=="spill") return;
+      calcs.forEach(function(o){ if(o===k||!o.cell||!o.vals) return;
+        if(o.cell.c>=t.c1&&o.cell.c<=t.c2&&o.cell.r>=t.r1&&o.cell.r<=t.r2&&deps.indexOf(o)<0) deps.push(o); });
+    });
+    deps.forEach(function(o){ o.vals.forEach(function(row,i){ row.forEach(function(v,j){ var a=A(o.cell.c+j,o.cell.r+i); vals[a]=v; cls[a]=(cls[a]||"")+" dep"; }); }); });
+    return {vals:vals,cls:cls};
+  }
+  function spillOf(ad){ var o=anchorCalc(ad); return o?o.vals:null; }
+  function render(state){
+    Object.keys(cellsEl).forEach(function(a){
+      var td=cellsEl[a], v=state.vals[a];
+      td.textContent=show(v); td.className=(td.classList.contains("hd")?"hd ":"")+(state.cls[a]||"");
+      td.removeAttribute("style");
+      if(state.ref[a]!=null){ var n=state.ref[a]; td.style.boxShadow="inset 0 0 0 2px "+PAL[n%PAL.length]; if(!/t-|res/.test(state.cls[a]||"")) td.style.background=TINT[n%TINT.length]; }
+    });
+  }
+  function build(i){
+    var k=calcs[i], b=paintBase(k), ref={};
+    k.toks.forEach(function(t){
+      var key=t.key?t.key.replace("#",""):null, n=key?k.keys.indexOf(key):-1;
+      if(t.t==="ref") for(var r=t.r1;r<=t.r2;r++) for(var c=t.c1;c<=t.c2;c++){ var a=A(c,r); if(ref[a]==null) ref[a]=n; }
+      if(t.t==="spill"){ var sp=spillOf(A(t.c1,t.r1)); if(sp) sp.forEach(function(row,ri){row.forEach(function(_,cj){var a=A(t.c1+cj,t.r1+ri); if(ref[a]==null) ref[a]=n;});}); }
+      if(t.t==="col") for(var r2=1;r2<=maxR;r2++) for(var c3=t.c1;c3<=t.c2;c3++){ var a2=A(c3,r2); if(ref[a2]==null) ref[a2]=n; }
+    });
+    var ctx=new Ctx(function(a){return b.vals[a];},spillOf);
+    var tr=trace(k.f,ctx);
+    return {k:k,base:b,ref:ref,tr:tr};
+  }
+  function resCells(k){ var out={}; if(k.cell&&k.vals) k.vals.forEach(function(row,i){row.forEach(function(v,j){out[A(k.cell.c+j,k.cell.r+i)]=v;});}); return out; }
+  function finalState(B){
+    var st={vals:Object.assign({},B.base.vals),cls:Object.assign({},B.base.cls),ref:B.ref};
+    function add(cells,c){ (cells||[]).forEach(function(a){ st.cls[a]=(st.cls[a]||"")+" "+c; }); }
+    var t=B.tr;
+    if(t&&t.type==="lookup") t.parts.forEach(function(p){ add(p.keyCells,"t-key"); if(p.hit) add(p.hit,"t-hit"); add(p.ret,"t-ret"); });
+    if(t&&t.type==="cond") t.rows.forEach(function(r){ add(r.cells,r.ok?"t-hit":"t-no"); if(r.ok) add(r.tgt,"t-ret"); });
+    if(t&&t.type==="if"){ t.steps.forEach(function(s){ add(s.cells,"t-key"); }); add(t.ret,"t-ret"); }
+    if(t&&t.type==="agg") add(t.cells,"t-hit");
+    var rc=resCells(B.k); Object.keys(rc).forEach(function(a){ st.vals[a]=rc[a]; st.cls[a]=(st.cls[a]||"").replace(/\bdep\b/g,"")+" res"; });
+    return st;
+  }
+  function baseCap(k){ return k.note?('<b>'+esc(k.addr)+'</b> 결과: '+esc(k.txt)):('<b>'+esc(k.addr)+'</b> 결과: <b class="g">'+esc(k.txt)+'</b>'); }
+  function select(i,play){
+    stop(); sel=i;
+    root.querySelectorAll(".xc").forEach(function(el,j){el.classList.toggle("on",j===i);});
+    var B=build(i);
+    if(!play){ render(finalState(B)); cap.innerHTML=legend(B)+baseCap(B.k); return; }
+    playSteps(B);
+  }
+  function legend(B){
+    var t=B.tr; if(!t) return "";
+    var m={lookup:'<span class="lg t-hit">찾은 칸</span><span class="lg t-ret">가져온 칸</span>',cond:'<span class="lg t-hit">조건 맞음</span><span class="lg t-no">아님</span>'+(t.rows&&t.rows.some(function(r){return r.ok&&r.tgt.length;})?'<span class="lg t-ret">계산에 쓰인 칸</span>':''),
+      if:'<span class="lg t-key">조건 확인</span>',agg:'<span class="lg t-hit">계산에 쓰인 칸</span>'};
+    return '<span class="lgs">'+(m[t.type]||"")+'<span class="lg res">결과</span></span>';
+  }
+  function playSteps(B){
+    var steps=[], st={vals:Object.assign({},B.base.vals),cls:Object.assign({},B.base.cls),ref:B.ref}, t=B.tr;
+    function add(cells,c){ (cells||[]).forEach(function(a){ st.cls[a]=(st.cls[a]||"")+" "+c; }); }
+    function rm(cells,c){ (cells||[]).forEach(function(a){ st.cls[a]=(st.cls[a]||"").replace(new RegExp("\\s*\\b"+c+"\\b","g"),""); }); }
+    function S(fn,msg){ steps.push({fn:fn,msg:msg}); }
+    S(function(){},"수식이 어떤 칸을 보는지 따라가 볼게요");
+    if(t&&t.type==="lookup"){
+      t.parts.forEach(function(p,pi){
+        if(p.keyCells.length||p.key!=null) S(function(){add(p.keyCells,"t-key");},'찾을 값: <b>'+esc(show(p.key))+'</b>');
+        var prev=null;
+        p.scan.forEach(function(s,si){
+          var isHit=p.hit&&s.cells.join()===p.hit.join();
+          S(function(){ if(prev) rm(prev,"t-scan"); add(s.cells,isHit?"t-hit":"t-scan"); prev=isHit?null:s.cells; },
+            esc(s.cells.join(","))+' 확인: '+esc(show(s.v))+(isHit?' → <b class="g">일치!</b>':' → 아님'));
+        });
+        S(function(){ if(prev) rm(prev,"t-scan"); prev=null; add(p.ret,"t-ret"); },
+          p.pick?('<b>'+esc(p.ret.join(", "))+'</b> 칸 값을 가져와요'):p.hit?(p.ret.length?'같은 줄의 <b>'+esc(p.ret.join(", "))+'</b> 값을 가져와요':'몇 번째인지 셉니다'):'못 찾았어요');
+      });
+    } else if(t&&t.type==="cond"){
+      t.rows.forEach(function(r){
+        var row=r.cells.length?pcell(r.cells[0]).r:"";
+        S(function(){ add(r.cells,"t-scan"); }, row+'행 확인: '+esc(r.vals.map(show).join(" · ")));
+        S(function(){ rm(r.cells,"t-scan"); add(r.cells,r.ok?"t-hit":"t-no"); if(r.ok) add(r.tgt,"t-ret"); }, row+'행 → '+(r.ok?'<b class="g">조건 맞음 ✓</b>':'아님'));
+      });
+    } else if(t&&t.type==="if"){
+      t.steps.forEach(function(s){ S(function(){add(s.cells,"t-key");},'조건 확인 → '+(s.ok?'<b class="g">참(TRUE)</b>':'거짓(FALSE)')); });
+      if(t.ret.length) S(function(){add(t.ret,"t-ret");},'해당 값을 가져와요');
+    } else if(t&&t.type==="agg"){
+      t.cells.forEach(function(a){ S(function(){add([a],"t-hit");},esc(a)+' 포함'); });
+    }
+    var rc=resCells(B.k);
+    S(function(){ Object.keys(rc).forEach(function(a){ st.vals[a]=rc[a]; st.cls[a]=(st.cls[a]||"").replace(/\bdep\b/g,"")+" res pop"; }); }, '결과: <b class="g">'+esc(B.k.txt)+'</b>');
+    var gap=steps.length>18?320:steps.length>10?480:650, i=0;
+    root.classList.add("playing");
+    render(st);
+    (function next(){
+      if(i>=steps.length){ timer=null; root.classList.remove("playing"); var fs=finalState(B); render(fs); cap.innerHTML=legend(B)+baseCap(B.k)+' <button class="btn xre">↻ 다시</button>'; var re=cap.querySelector(".xre"); if(re) re.onclick=function(){select(sel,true);}; return; }
+      steps[i].fn(); render(st); cap.innerHTML='<span class="stepn">'+(i+1)+'/'+steps.length+'</span> '+steps[i].msg; i++;
+      timer=setTimeout(next,gap);
+    })();
+  }
+  root.querySelectorAll(".xc").forEach(function(el){
+    var i=+el.getAttribute("data-i");
+    el.addEventListener("click",function(e){ if(e.target.closest("[data-copy]")) return; if(e.target.closest(".xplay")){ select(i,true); return; } select(i,false); });
+  });
+  root.querySelectorAll(".xc").forEach(function(el,i){ var tr=null; try{ tr=build(i).tr; }catch(e){} calcs[i].hasTrace=!!tr;
+    if(!tr||!calcs[i].vals) el.querySelector(".xplay").style.display="none"; });
+  if(calcs.length) select(0,false); else render({vals:base,cls:{},ref:{}});
+  return {calcs:calcs,select:select,_trace:function(i){return build(i).tr;}};
+}
+return {mount:mount,_tokenize:tokenize,_parse:parse,_trace:trace};
+})();
+
+</script>
+<script>
+(function(){
+"use strict";
+var VERSION = "v1.3";
+var LOG = [
+  ["v1.3","2026-11-05","화면 정리 — 첫 화면을 주제별 카드 8개로, 함수 이름 크게·설명은 부제목으로, 안내 문구 정리, 관련 항목을 한곳에 모음, 전체 목록 15개씩 보기"],
+  ["v1.2","2026-11-05","예시 보기 개선 — 결과를 표 안에 직접 표시, 수식 속 범위를 색으로 표시, 찾은 칸·조건 맞는 행 강조, ▶ 재생으로 단계별 애니메이션"],
+  ["v1.1","2026-11-05","심화과정 추가 — 심화 배지, 기초 항목 아래 '한 단계 더' 연결, 둘러보기 '심화' 탭 (XLOOKUP 여러 개 가져오기, FILTER 조합, 수식 하나로 요약표, 피벗 심화, 파워 쿼리 입문)"],
+  ["v1.0","2026-11-04","첫 배포 — 자동완성 검색(동의어·초성·오타), 함수 사전·상황별 해결법·기능 사용법"]
+];
+var TYPE = {f:{label:"함수",cls:"b-f"},c:{label:"상황별",cls:"b-c"},k:{label:"기능",cls:"b-k"}};
+var CATS = window.EXCEL_CATS;
+var ITEMS = window.EXCEL_DATA;
+var BYID = {};
+ITEMS.forEach(function(it){ BYID[it.id]=it; });
+var NEXT = {}; // 기초 항목 id → 이어지는 심화 항목들
+ITEMS.forEach(function(it){ (it.from||[]).forEach(function(f){ (NEXT[f]=NEXT[f]||[]).push(it); }); });
+
+/* ---------- 검색 준비 ---------- */
+var CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+function cho(s){
+  var o="";
+  for(var i=0;i<s.length;i++){
+    var c=s.charCodeAt(i);
+    if(c>=0xAC00&&c<=0xD7A3) o+=CHO[Math.floor((c-0xAC00)/588)];
+    else o+=s[i];
+  }
+  return o;
+}
+function norm(s){ return String(s).toLowerCase().replace(/[\s\-_.()·,/'"!?~]/g,""); }
+var STOP = ["어떻게","방법","하는법","하는방법","하고","싶어","싶은데","싶다","싶어요","엑셀","excel","좀","해줘","알려줘","하려면","할때","하는","있나요","있어","되나요","수식으로","수식","뭐야","뭐임","쓰는법","사용법"];
+var JOSA = ["에서","으로","하기","에게","부터","까지","별로","마다","만","로","을","를","이","가","은","는","에","의","도","과","와"];
+function tokens(q){
+  return q.trim().split(/\s+/).map(norm).filter(function(t){return t && STOP.indexOf(t)<0;}).map(function(t){
+    for(var i=0;i<JOSA.length;i++){
+      var j=JOSA[i];
+      if(t.length>j.length+1 && t.slice(-j.length)===j) return t.slice(0,-j.length);
+    }
+    return t;
+  });
+}
+function lev(a,b){
+  if(Math.abs(a.length-b.length)>2) return 9;
+  var p=[],i,j;
+  for(j=0;j<=b.length;j++)p[j]=j;
+  for(i=1;i<=a.length;i++){
+    var prev=p[0];p[0]=i;
+    for(j=1;j<=b.length;j++){
+      var tmp=p[j];
+      p[j]=Math.min(p[j]+1,p[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));
+      prev=tmp;
+    }
+  }
+  return p[b.length];
+}
+ITEMS.forEach(function(it){
+  var terms=[it.title].concat(it.k||[]);
+  if(it.ask) terms.push(it.ask);
+  if(it.fn) terms.push(it.fn);
+  it._hay=terms.map(norm).filter(Boolean);
+  it._cho=it._hay.map(cho);
+  it._fn=it.fn?norm(it.fn):null;
+  it._cat=norm(CATS[it.cat]||"");
+  it._title=norm(it.title);
+});
+function tokScore(it,t){
+  var best=0, isCho=/^[ㄱ-ㅎ]+$/.test(t), isAscii=/^[a-z0-9.]+$/.test(t);
+  for(var i=0;i<it._hay.length;i++){
+    var h=it._hay[i], s=0;
+    if(h===t) s=120;
+    else if(h.indexOf(t)===0) s=100;
+    else if(h.indexOf(t)>0) s=80;
+    else if(h.length>=2 && t.indexOf(h)>=0) s=60;
+    else if(isCho && t.length>=2 && it._cho[i].indexOf(t)>=0) s=70;
+    if(s>best) best=s;
+  }
+  if(!best && isAscii && t.length>=4){
+    for(var k=0;k<it._hay.length;k++){
+      var hh=it._hay[k];
+      if(!/^[a-z0-9.]+$/.test(hh)) continue;
+      var d=lev(t,hh), lim=t.length>=7?2:1;
+      if(d<=lim){best=Math.max(best,55-d*5);}
+    }
+  }
+  if(!best && it._cat && (it._cat===t || it._cat.indexOf(t)>=0)) best=30;
+  return best;
+}
+function search(q){
+  var ts=tokens(q); if(!ts.length) return [];
+  var need=ts.length<=2?ts.length:Math.ceil(ts.length*0.6);
+  var whole=norm(q), out=[];
+  ITEMS.forEach(function(it){
+    var sum=0,hit=0;
+    ts.forEach(function(t){var s=tokScore(it,t); if(s){hit++;sum+=s;}});
+    if(hit>=need){
+      if(whole.length>=2 && it._title.indexOf(whole)>=0) sum+=50;
+      if(it.pop) sum+=3;
+      out.push({it:it,s:sum,h:hit});
+    }
+  });
+  out.sort(function(a,b){return b.h-a.h||b.s-a.s;});
+  return out.map(function(o){return o.it;});
+}
+function similar(q){ // 결과 없을 때: 글자 두 개씩 겹치는 정도
+  var w=norm(q), bg=[];
+  for(var i=0;i<w.length-1;i++) bg.push(w.substr(i,2));
+  if(!bg.length) return [];
+  return ITEMS.map(function(it){
+    var all=it._hay.join("|"), n=0;
+    bg.forEach(function(b){ if(all.indexOf(b)>=0) n++; });
+    return {it:it,n:n};
+  }).filter(function(o){return o.n>0;}).sort(function(a,b){return b.n-a.n;}).slice(0,3).map(function(o){return o.it;});
+}
+
+/* ---------- 공통 ---------- */
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove("show");},1600);}
+function copy(text,msg){
+  function fb(){var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(ta);toast(msg||"복사했어요");}
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){toast(msg||"복사했어요");},fb);}else fb();
+}
+function badge(it){var t=TYPE[it.t];return '<span class="badge '+t.cls+'">'+t.label+'</span>';}
+function nameOf(it){var i=it.title.indexOf(" — ");return i>0?it.title.slice(0,i):it.title;}
+function subOf(it){var i=it.title.indexOf(" — ");return i>0?it.title.slice(i+3):"";}
+function advTag(it){return it.lv===2?'<span class="advtag">심화</span>':'';}
+function titleHtml(it){var sb=subOf(it);return '<span class="nm">'+esc(nameOf(it))+'</span>'+(sb?' <span class="tsub">'+esc(sb)+'</span>':'')+advTag(it);}
+function rowHtml(it){
+  return '<div class="row" data-id="'+it.id+'">'+badge(it)+'<div><div class="tt">'+titleHtml(it)+'</div><div class="ds">'+esc(it.d)+'</div></div></div>';
+}
+function bindRows(root){
+  root.querySelectorAll("[data-id]").forEach(function(el){
+    el.addEventListener("click",function(){go("id="+el.getAttribute("data-id"));});
+  });
+}
+function go(h){ if(location.hash.slice(1)===h) route(); else location.hash=h; }
+
+/* ---------- 자동완성 ---------- */
+var inp=$("q"), dd=$("dd"), clr=$("clr"), cur=-1, opts=[];
+function renderDD(){
+  var q=inp.value; clr.style.display=q?"block":"none";
+  if(!q.trim()){dd.style.display="none";opts=[];return;}
+  var r=search(q); opts=r.slice(0,8); cur=-1;
+  if(!r.length){
+    dd.innerHTML='<div class="more">딱 맞는 항목이 없어요 — <b>Enter</b>를 누르면 비슷한 항목과 질문 도우미를 보여드려요</div>';
+  }else{
+    dd.innerHTML=opts.map(function(it,i){
+      return '<div class="opt" data-i="'+i+'">'+badge(it)+'<div class="tx"><div class="tt">'+titleHtml(it)+'</div><div class="ds">'+esc(it.d)+'</div></div></div>';
+    }).join("")+(r.length>8?'<div class="more">Enter → 결과 '+r.length+'개 모두 보기</div>':'');
+    dd.querySelectorAll(".opt").forEach(function(el){
+      el.addEventListener("mousedown",function(e){e.preventDefault();pick(+el.getAttribute("data-i"));});
+    });
+  }
+  dd.style.display="block";
+}
+function hl(){dd.querySelectorAll(".opt").forEach(function(el,i){el.classList.toggle("on",i===cur);if(i===cur)el.scrollIntoView({block:"nearest"});});}
+function pick(i){var it=opts[i];if(!it)return;dd.style.display="none";inp.blur();go("id="+it.id);}
+inp.addEventListener("input",renderDD);
+inp.addEventListener("focus",renderDD);
+inp.addEventListener("blur",function(){setTimeout(function(){dd.style.display="none";},120);});
+inp.addEventListener("keydown",function(e){
+  if(e.key==="ArrowDown"){e.preventDefault();if(opts.length){cur=(cur+1)%opts.length;hl();}}
+  else if(e.key==="ArrowUp"){e.preventDefault();if(opts.length){cur=(cur-1+opts.length)%opts.length;hl();}}
+  else if(e.key==="Enter"){e.preventDefault();
+    if(cur>=0) pick(cur);
+    else if(inp.value.trim()){dd.style.display="none";go("q="+encodeURIComponent(inp.value.trim()));}
+  }
+  else if(e.key==="Escape"){dd.style.display="none";}
+});
+clr.addEventListener("click",function(){inp.value="";renderDD();inp.focus();go("");});
+
+/* ---------- 화면 ---------- */
+var main=$("main"), browseType="all", browseTopic="", browseAll=false;
+var TOPICS=[
+  {id:"find",i:"🔎",n:"찾아오기",cats:["lookup","dyn"],p:[["xlookup","XLOOKUP 기본"],["c_find_name","사번으로 이름 찾기"],["a_xl_multi_rows","여러 개 한 번에 가져오기"],["filter","조건 맞는 행 뽑기 (FILTER)"]]},
+  {id:"sum",i:"➕",n:"합계·개수",cats:["sum","num"],p:[["sumifs","조건 합계 (SUMIFS)"],["countif","조건 개수 (COUNTIF)"],["c_sum_by_dept","부서별 합계표"],["c_won_cut","원 단위 절사"]]},
+  {id:"date",i:"📅",n:"날짜·근속",cats:["date"],p:[["c_tenure","근속연수 계산"],["networkdays","근무일수 (주말·공휴일 제외)"],["c_prorate","일할 계산"],["c_work_hours","근무시간 계산"]]},
+  {id:"cmp",i:"⚖️",n:"비교·중복",cats:["compare"],p:[["c_list_diff","두 명단 비교"],["c_diff_two","두 표 금액 차이"],["c_dup_mark","중복 표시"],["a_diff_list","차이 있는 사람만 목록"]]},
+  {id:"clean",i:"🧹",n:"데이터 정리",cats:["text","clean"],p:[["trim","공백 없애기"],["k_text_to_columns","텍스트 나누기"],["k_flash_fill","빠른 채우기 (Ctrl+E)"],["k_remove_dup","중복 항목 제거"]]},
+  {id:"pivot",i:"📊",n:"피벗·요약",cats:["analyze"],p:[["k_pivot","피벗 테이블 기본"],["a_pivot_layout","피벗을 일반 표처럼"],["a_pivot_show_as","피벗 비율·전월 대비"],["k_filter","자동 필터"]]},
+  {id:"input",i:"📝",n:"입력·서식",cats:["input","format","view","protect"],p:[["k_dropdown","드롭다운 만들기"],["k_cond_dup","중복 값 색칠하기"],["k_freeze","틀 고정"],["k_shortcuts","자주 쓰는 단축키"]]},
+  {id:"fix",i:"⚠️",n:"조건·오류",cats:["logic","fix"],p:[["if","IF 조건"],["iferror","오류 대신 다른 값"],["c_na_reason","#N/A 원인 체크"],["c_absolute_ref","$ 고정 (F4)"]]}
+];
+var TBYID={}; TOPICS.forEach(function(t){TBYID[t.id]=t;});
+function inTopic(it,tid){ return !tid||TBYID[tid].cats.indexOf(it.cat)>=0; }
+function home(){
+  var html='<div class="shrow"><h2>주제별로 찾기</h2><span>항목 '+ITEMS.length+'개</span></div><div class="topics">'+TOPICS.map(function(t){
+    var n=ITEMS.filter(function(it){return inTopic(it,t.id);}).length;
+    return '<div class="topic"><button class="th" data-topic="'+t.id+'"><span class="ti">'+t.i+'</span><span class="tn">'+t.n+'</span><span class="tc">'+n+'개 ›</span></button><ul>'+
+      t.p.filter(function(p){return BYID[p[0]];}).map(function(p){return '<li data-id="'+p[0]+'">'+esc(p[1])+'</li>';}).join("")+'</ul></div>';
+  }).join("")+'</div>';
+  html+='<div class="sec" id="browse"><h2>전체 목록</h2><div class="filters"><div class="tabs" id="tabs"></div><div class="chips" id="cats"></div></div><div class="cnt" id="cnt"></div><div class="list" id="blist"></div><div id="bmore"></div></div>';
+  main.innerHTML=html; bindRows(main);
+  main.querySelectorAll("[data-topic]").forEach(function(b){b.onclick=function(){browseTopic=b.getAttribute("data-topic");browseType="all";browseAll=false;drawBrowse();$("browse").scrollIntoView({behavior:"smooth",block:"start"});};});
+  drawBrowse();
+}
+function drawBrowse(){
+  var tabs=[["all","전체"],["f","함수"],["c","상황별"],["k","기능"],["adv","심화"]];
+  function inTab(i,t){ return t==="all"||(t==="adv"?i.lv===2:i.t===t); }
+  var inT=ITEMS.filter(function(i){return inTopic(i,browseTopic);});
+  $("tabs").innerHTML=tabs.map(function(t){
+    var n=inT.filter(function(i){return inTab(i,t[0]);}).length;
+    return '<button class="chip'+(browseType===t[0]?' on':'')+'" data-t="'+t[0]+'">'+t[1]+'<span class="n">'+n+'</span></button>';
+  }).join("");
+  $("cats").innerHTML='<button class="chip'+(!browseTopic?' on':'')+'" data-c="">모든 주제</button>'+
+    TOPICS.map(function(t){return '<button class="chip'+(browseTopic===t.id?' on':'')+'" data-c="'+t.id+'">'+t.i+' '+esc(t.n)+'</button>';}).join("");
+  var list=inT.filter(function(i){return inTab(i,browseType);});
+  var LIM=15, shown=browseAll?list:list.slice(0,LIM);
+  $("cnt").textContent=list.length+"개";
+  $("blist").innerHTML=shown.map(rowHtml).join("");
+  $("bmore").innerHTML=list.length>shown.length?'<button class="morebtn" id="mb">'+(list.length-shown.length)+'개 더 보기</button>':'';
+  if($("mb")) $("mb").onclick=function(){browseAll=true;drawBrowse();};
+  bindRows($("blist"));
+  $("tabs").querySelectorAll("[data-t]").forEach(function(b){b.onclick=function(){browseType=b.getAttribute("data-t");browseAll=false;drawBrowse();};});
+  $("cats").querySelectorAll("[data-c]").forEach(function(b){b.onclick=function(){browseTopic=b.getAttribute("data-c");browseAll=false;drawBrowse();};});
+}
+function results(q){
+  inp.value=q; clr.style.display="block";
+  var r=search(q);
+  if(!r.length){ empty(q); return; }
+  main.innerHTML='<div class="sec"><div class="back"><button class="linkbtn" id="bk">← 처음으로</button></div><h2>"'+esc(q)+'" 검색 결과 <span class="tsub">'+r.length+'개</span></h2><div class="list">'+r.map(rowHtml).join("")+'</div></div>';
+  bindRows(main); $("bk").onclick=function(){go("");};
+}
+function empty(q){
+  var sim=similar(q);
+  var ask="엑셀 365를 쓰고 있어요.\n하고 싶은 것: "+q+"\n\n[열 구성] (실제 직원 데이터 말고 열 이름만 적어주세요)\nA열: \nB열: \nC열: \n\n추천 수식과 사용 예시를 알려주세요.";
+  var req="[엑셀 수식 도우미 추가 요청]\n검색어: "+q+"\n원하는 것: ";
+  main.innerHTML='<div class="sec empty"><div class="back"><button class="linkbtn" id="bk">← 처음으로</button></div>'+
+    '<div class="big">"'+esc(q)+'"에 딱 맞는 항목이 아직 없어요</div>'+
+    '<p class="hintp">다른 단어로도 찾아보세요 — 예: "합계" 대신 "더하기", "찾기" 대신 "불러오기"</p>'+
+    (sim.length?'<h2 class="sh">혹시 이건가요?</h2><div class="list">'+sim.map(rowHtml).join("")+'</div>':'')+
+    '<h2 class="sh" style="margin-top:18px">그래도 없으면</h2><div class="chips">'+
+    '<button class="btn primary" id="askc">Claude에 물어볼 질문 복사</button>'+
+    '<button class="btn" id="reqc">추가 요청 문구 복사</button></div>'+
+    '<p class="hintp" style="margin:8px 0 0">질문 문구에는 열 이름만 채워서 붙여넣으세요 — 실제 직원 정보는 넣지 마세요.</p></div>';
+  bindRows(main);
+  $("bk").onclick=function(){go("");};
+  $("askc").onclick=function(){copy(ask,"질문을 복사했어요 — Claude 채팅에 붙여넣으세요");};
+  $("reqc").onclick=function(){copy(req,"요청 문구를 복사했어요 — 담당자에게 보내주세요");};
+}
+var COLS="ABCDEFGHIJKLMNOP";
+function cellTxt(v){ if(v===null||v===undefined) return ""; if(v==="=NA()") return "#N/A"; return v; }
+function exHtml(ex){
+  var h='<div class="grid-wrap"><table class="grid"><tr><th></th>';
+  for(var c=0;c<ex.c.length;c++) h+='<th>'+COLS[c]+'</th>';
+  h+='</tr><tr class="hdr"><th>1</th>'+ex.c.map(function(x){return '<td>'+esc(x)+'</td>';}).join("")+'</tr>';
+  (ex.r||[]).forEach(function(row,i){
+    h+='<tr><th>'+(i+2)+'</th>'+row.map(function(v){var t=cellTxt(v);return '<td>'+(typeof v==="number"&&Math.abs(v)>=10000?esc(t.toLocaleString()):esc(t))+'</td>';}).join("")+'</tr>';
+  });
+  h+='</table></div>';
+  (ex.calc||[]).forEach(function(k){
+    h+='<div class="calc"><span class="cell">'+esc(k[0])+'</span><code>'+esc(k[1])+'</code><span>→</span><span class="res">'+esc(k[2])+'</span><button class="btn" data-copy="'+esc(k[1])+'">복사</button></div>';
+  });
+  if(ex.note) h+='<div class="hint" style="margin:6px 0 0">'+esc(ex.note)+'</div>';
+  return h;
+}
+function item(id){
+  var it=BYID[id]; if(!it){home();return;}
+  inp.value=""; clr.style.display="none"; dd.style.display="none";
+  var sb=subOf(it);
+  var h='<div class="sec item"><div class="back"><button class="linkbtn" id="bk">← 뒤로</button></div>'+
+    '<div class="head">'+badge(it)+advTag(it)+'<span class="cat">'+esc(CATS[it.cat]||"")+'</span></div>'+
+    '<h2 class="title">'+esc(nameOf(it))+'</h2>'+(sb?'<div class="subtitle">'+esc(sb)+'</div>':'');
+  if(it.f) h+='<div class="fbox"><code>'+esc(it.f)+'</code><button class="btn primary" data-copy="'+esc(it.f)+'">수식 복사</button></div>';
+  h+='<p class="desc"'+(it.f?'':' style="margin-top:14px"')+'>'+esc(it.d)+'</p>';
+  if(it.args&&it.args.length){
+    h+='<h3>입력값 설명</h3><table class="args">'+it.args.map(function(a){return '<tr><td>'+esc(a[0])+'</td><td>'+esc(a[1])+'</td></tr>';}).join("")+'</table>';
+  }
+  if(it.steps&&it.steps.length){
+    h+='<h3>따라하기</h3><ol class="steps">'+it.steps.map(function(s){return '<li>'+esc(s)+'</li>';}).join("")+'</ol>';
+  }
+  if(it.ex) h+='<h3>예시 <span class="h3hint">수식 줄을 누르면 표에서 보여주고, ▶ 재생은 한 단계씩 움직여요</span></h3><div id="exv"></div>';
+  if(it.tips&&it.tips.length){
+    h+='<h3>주의·팁</h3><div class="tipbox"><ul class="tips">'+it.tips.map(function(s){return '<li>'+esc(s)+'</li>';}).join("")+'</ul></div>';
+  }
+  var nx=NEXT[it.id]||[];
+  var fromIt=(it.from||[]).map(function(r){return BYID[r];}).filter(Boolean);
+  var shown=(it.from||[]).concat(nx.map(function(a){return a.id;}));
+  var rel=(it.rel||[]).filter(function(r){return shown.indexOf(r)<0;}).map(function(r){return BYID[r];}).filter(Boolean);
+  function chipOf(r){return '<button class="chip" data-id="'+r.id+'">'+esc(nameOf(r))+(r.lv===2?' <span class="advtag">심화</span>':'')+'</button>';}
+  if(nx.length||fromIt.length||rel.length){
+    h+='<h3>다음 단계 · 관련 항목</h3>';
+    if(nx.length) h+='<div class="nextbox">'+nx.map(function(a){
+      return '<div class="q" data-id="'+a.id+'"><span class="arrow">↳</span><span>'+esc(a.ask||a.title)+' <span class="sub">'+esc(nameOf(a))+'</span></span></div>';
+    }).join("")+'</div>';
+    if(fromIt.length) h+='<div class="relrow"><span class="rl">기초</span><div class="chips">'+fromIt.map(chipOf).join("")+'</div></div>';
+    if(rel.length) h+='<div class="relrow"><span class="rl">관련</span><div class="chips">'+rel.map(chipOf).join("")+'</div></div>';
+  }
+  h+='</div>';
+  main.innerHTML=h;
+  if(it.ex){ try{ window.XLViz.mount($("exv"),it); }catch(e){ $("exv").innerHTML=exHtml(it.ex); } }
+  bindRows(main);
+  main.querySelectorAll("[data-copy]").forEach(function(b){b.onclick=function(){copy(b.getAttribute("data-copy"),"수식을 복사했어요");};});
+  $("bk").onclick=function(){ if(history.length>1) history.back(); else go(""); };
+  window.scrollTo(0,0);
+}
+function route(){
+  var h=decodeURIComponent(location.hash.slice(1));
+  if(h.indexOf("id=")===0) item(h.slice(3));
+  else if(h.indexOf("q=")===0) results(h.slice(2));
+  else { home(); }
+}
+window.addEventListener("hashchange",route);
+
+$("ver").textContent=VERSION+" · "+LOG[0][1];
+var na=ITEMS.filter(function(i){return i.lv===2;}).length;
+LOG[2][2]+=" (심화 "+na+"개 · 전체 "+ITEMS.length+"개)";
+$("log").innerHTML=LOG.map(function(l){return '<div><b>'+l[0]+'</b> ('+l[1]+') '+esc(l[2])+'</div>';}).join("");
+route();
+})();
+</script>
+<!-- 허브 '업데이트 기록' 자동 갱신용 (최신이 위) -->
+<footer class="ver" data-tool="엑셀 수식 도우미" style="display:none">
+  <ul>
+    <li data-date="2026.11.05">새로 추가 — 하고 싶은 작업으로 수식·기능 206개 검색(초성·오타 지원) · 예시 표 색칠·단계별 재생 · 주제별 카드</li>
+  </ul>
+</footer>
+</body>
+</html>
