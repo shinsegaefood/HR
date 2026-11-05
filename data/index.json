@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-05 10:52",
+ "lastRun": "2026-11-05 12:45",
  "today": "2026-11-05",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,13 +7,13 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1575,
- "added": 2,
+ "total": 1583,
+ "added": 8,
  "stageChanged": 0,
  "status": {
   "의안": "정상 747건",
-  "법령": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
+  "법령": "정상 27건",
   "판례": "정상 522건",
-  "뉴스": "정상 17건"
+  "뉴스": "정상 20건"
  }
 }
