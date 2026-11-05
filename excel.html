@@ -23,6 +23,22 @@ button{font-family:inherit}
 .topbar a.hub{color:var(--sub);text-decoration:none}
 .topbar a.hub:hover{color:var(--ink)}
 .topbar .ver{color:var(--mute);font-size:12px}
+.topbar .tr{display:flex;align-items:center;gap:10px}
+.helpbtn{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:4px 12px;font-size:12.5px;color:var(--sub);cursor:pointer;font-weight:700}
+.helpbtn:hover{border-color:var(--accent);color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal.show{display:flex}
+.mbox{background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:calc(100vh - 32px);overflow-y:auto;padding:22px 22px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.mbox h2{margin:0 0 4px;font-size:19px}
+.mbox .ms{margin:0 0 14px;color:var(--sub);font-size:13.5px}
+.mstep{display:flex;gap:12px;padding:10px 0}
+.mstep+.mstep{border-top:1px solid var(--line2)}
+.mstep .no{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent-weak);color:var(--accent);font-weight:700;font-size:13px;display:grid;place-items:center}
+.mstep b{display:block;font-size:14.5px}
+.mstep span{font-size:13.5px;color:var(--sub)}
+.mstep kbd{font-family:Consolas,monospace;font-size:12px;background:var(--code);border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--ink)}
+.mlock{margin:12px 0 14px;font-size:12.5px;color:var(--sub);background:var(--code);border-radius:10px;padding:9px 12px}
+.mfoot{display:flex;justify-content:flex-end}
 .hero{display:flex;align-items:center;gap:14px;padding:18px 0 18px}
 .logo{flex:none;width:46px;height:46px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font:700 18px/1 Consolas,monospace;letter-spacing:-.5px;box-shadow:0 4px 12px rgba(31,122,77,.25)}
 .hero h1{font-size:24px;margin:0;letter-spacing:-.4px;line-height:1.25}
@@ -173,7 +189,7 @@ footer #log div{margin:4px 0}
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar"><span></span><span class="ver" id="ver"></span></div>
+  <div class="topbar"><span></span><span class="tr"><span class="ver" id="ver"></span><button class="helpbtn" id="helpbtn">사용법</button></span></div>
   <header class="hero">
     <div class="logo">fx</div>
     <div><h1>엑셀 수식 도우미</h1><p>하고 싶은 작업을 적으면 수식과 사용법을 찾아드려요</p></div>
@@ -194,6 +210,19 @@ footer #log div{margin:4px 0}
   </footer>
 </div>
 <div class="toast" id="toast"></div>
+<div class="modal" id="help" role="dialog" aria-modal="true" aria-labelledby="help-t">
+  <div class="mbox">
+    <h2 id="help-t">엑셀 수식 도우미 사용법</h2>
+    <p class="ms">엑셀에서 막히는 게 있을 때 하고 싶은 작업을 적으면 수식과 방법을 찾아줘요.</p>
+    <div class="mstep"><span class="no">1</span><div><b>하고 싶은 작업을 그냥 적기</b><span>"사번으로 이름 찾기", "근속연수"처럼 적으면 아래에 후보가 떠요. 초성(ㄷㄹㄷㅇ)·영문 함수명·오타로도 찾아요.</span></div></div>
+    <div class="mstep"><span class="no">2</span><div><b>뭘 검색할지 모르겠으면 주제 카드에서</b><span>찾아오기·합계·날짜·비교 등 주제별 카드에서 골라 보세요.</span></div></div>
+    <div class="mstep"><span class="no">3</span><div><b>수식 복사해서 범위만 바꾸기</b><span>"수식 복사"를 누르고 엑셀에 붙여넣은 뒤, <kbd>A2:A100</kbd> 같은 범위만 내 표에 맞게 바꾸면 돼요.</span></div></div>
+    <div class="mstep"><span class="no">4</span><div><b>예시로 어떻게 동작하는지 보기</b><span>예시의 수식 줄을 누르면 표에서 어느 칸을 보는지 색으로 보여줘요. <b style="display:inline;font-size:inherit;color:#c2410c">▶ 재생</b>을 누르면 한 단계씩 움직여요.</span></div></div>
+    <div class="mstep"><span class="no">5</span><div><b>원하는 게 없을 때</b><span>Enter를 누르면 비슷한 항목을 보여줘요. 그래도 없으면 "Claude에 물어볼 질문 복사"나 "추가 요청 문구 복사"를 써 주세요.</span></div></div>
+    <div class="mlock">🔒 입력한 내용은 어디로도 보내지 않아요. 실제 이름·사번·금액 대신 하고 싶은 작업만 적어주세요.</div>
+    <div class="mfoot"><button class="btn primary" id="helpclose">시작하기</button></div>
+  </div>
+</div>
 
 <script>
 window.EXCEL_CATS = {
@@ -2018,8 +2047,9 @@ return {mount:mount,_tokenize:tokenize,_parse:parse,_trace:trace};
 <script>
 (function(){
 "use strict";
-var VERSION = "v1.3";
+var VERSION = "v1.4";
 var LOG = [
+  ["v1.4","2026-11-05","사용법 추가 — 오른쪽 위 '사용법' 버튼, 처음 방문 시 한 번 자동 안내 · 인사검증 허브 링크 제거(단독 공유용)"],
   ["v1.3","2026-11-05","화면 정리 — 첫 화면을 주제별 카드 8개로, 함수 이름 크게·설명은 부제목으로, 안내 문구 정리, 관련 항목을 한곳에 모음, 전체 목록 15개씩 보기"],
   ["v1.2","2026-11-05","예시 보기 개선 — 결과를 표 안에 직접 표시, 수식 속 범위를 색으로 표시, 찾은 칸·조건 맞는 행 강조, ▶ 재생으로 단계별 애니메이션"],
   ["v1.1","2026-11-05","심화과정 추가 — 심화 배지, 기초 항목 아래 '한 단계 더' 연결, 둘러보기 '심화' 탭 (XLOOKUP 여러 개 가져오기, FILTER 조합, 수식 하나로 요약표, 피벗 심화, 파워 쿼리 입문)"],
@@ -2321,14 +2351,25 @@ window.addEventListener("hashchange",route);
 
 $("ver").textContent=VERSION+" · "+LOG[0][1];
 var na=ITEMS.filter(function(i){return i.lv===2;}).length;
-LOG[2][2]+=" (심화 "+na+"개 · 전체 "+ITEMS.length+"개)";
+LOG[3][2]+=" (심화 "+na+"개 · 전체 "+ITEMS.length+"개)";
 $("log").innerHTML=LOG.map(function(l){return '<div><b>'+l[0]+'</b> ('+l[1]+') '+esc(l[2])+'</div>';}).join("");
+/* 사용법 — 처음 온 사람에게 한 번 자동으로 */
+var help=$("help");
+function openHelp(){help.classList.add("show");help.querySelector(".mbox").scrollTop=0;try{$("helpclose").focus({preventScroll:true});}catch(e){}}
+function closeHelp(){help.classList.remove("show");try{localStorage.setItem("xlhelp_seen","1");}catch(e){}}
+$("helpbtn").onclick=openHelp;
+$("helpclose").onclick=closeHelp;
+help.addEventListener("click",function(e){if(e.target===help)closeHelp();});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&help.classList.contains("show"))closeHelp();});
+var seen=false; try{seen=localStorage.getItem("xlhelp_seen")==="1";}catch(e){seen=true;}
+if(!seen) openHelp();
 route();
 })();
 </script>
 <!-- 허브 '업데이트 기록' 자동 갱신용 (최신이 위) -->
 <footer class="ver" data-tool="엑셀 수식 도우미" style="display:none">
   <ul>
+    <li data-date="2026.11.05">사용법 추가 (처음 방문 시 자동 안내)</li>
     <li data-date="2026.11.05">새로 추가 — 하고 싶은 작업으로 수식·기능 206개 검색(초성·오타 지원) · 예시 표 색칠·단계별 재생 · 주제별 카드</li>
   </ul>
 </footer>
