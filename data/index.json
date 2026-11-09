@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-09 09:51",
+ "lastRun": "2026-11-09 10:15",
  "today": "2026-11-09",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,13 +7,13 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1644,
- "added": 20,
+ "total": 1645,
+ "added": 1,
  "stageChanged": 0,
  "status": {
   "의안": "정상 747건",
-  "법령": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "판례": "실패: <urlopen error [Errno -5] No address associated with hostname>",
+  "법령": "정상 27건",
+  "판례": "정상 521건",
   "뉴스": "정상 22건"
  }
 }
