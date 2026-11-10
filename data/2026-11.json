@@ -224,6 +224,34 @@
 "collected": "2026-11-10"
 },
 {
+"id": "news:https://www.kbmaeil.com/article/20261110500253",
+"cat": "news",
+"title": "영남이공대, 구직 청년 임금체불·부당해고 고충 상담",
+"date": "2026-11-10",
+"source": "kbmaeil.com",
+"url": "https://www.kbmaeil.com/article/20261110500253",
+"summary": "주요 상담 분야는 임금체불과 최저임금 위반, 직장 내 괴롭힘과 폭언·갑질, 부당해고와 권고사직 등이었다. 임금 지급부터 근무환경, 퇴직 과정에 이르기까지 근로 현…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-10"
+},
+{
+"id": "news:https://www.gokorea.kr/news/articleView.html?idxno=884916",
+"cat": "news",
+"title": "공무원 정년퇴직 후 소득 공백, 연금 개혁이 해결책 될까",
+"date": "2026-11-10",
+"source": "gokorea.kr",
+"url": "https://www.gokorea.kr/news/articleView.html?idxno=884916",
+"summary": "조기퇴직연금 역시 소득 공백의 완전한 해결책이 될 수 없다는 비판이 제기됐다. 조기퇴직연금은 소득 공백을 당장 메울 수 있으나, 장기적으로는 연금 수령액의 감액으…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-10"
+},
+{
 "id": "bill:PRC_7883E0E3065A4088940AB1FA808F92",
 "cat": "bill",
 "title": "고용보험법 일부개정법률안",
