@@ -252,6 +252,34 @@
 "collected": "2026-11-10"
 },
 {
+"id": "news:http://www.newsdream.kr/news/articleView.html?idxno=121818",
+"cat": "news",
+"title": "우리은행, 연말 맞이 '키우자, 굴리자 퇴직연금' 이벤트 실시",
+"date": "2026-11-10",
+"source": "newsdream.kr",
+"url": "http://www.newsdream.kr/news/articleView.html?idxno=121818",
+"summary": "우리은행(은행장 정진완)은 연말정산 시즌을 앞두고 12월 31일까지 '키우자, 굴리자 퇴직연금' 고객 감사 이벤트를 진행한다고 10일 밝혔다. 이번 행사는 노후 …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-10"
+},
+{
+"id": "news:https://www.lawissue.co.kr/view.php?ud=2026111012531559679a8c8bf58f_12",
+"cat": "news",
+"title": "공노총, '공무원 정년연장, 더 이상 미룰 수 없다!' 연금 소득공백·정년...",
+"date": "2026-11-10",
+"source": "lawissue.co.kr",
+"url": "https://www.lawissue.co.kr/view.php?ud=2026111012531559679a8c8bf58f_12",
+"summary": "박 수석부위원장은 \"2015년 연금개혁 당시 연금 지급개시연령 상향에 따른 소득공백 보완방안을 함께 논의하기로 했지만, 실질적인 대책은 마련되지 않았다\"며 \"최대…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-10"
+},
+{
 "id": "bill:PRC_7883E0E3065A4088940AB1FA808F92",
 "cat": "bill",
 "title": "고용보험법 일부개정법률안",
