@@ -402,9 +402,11 @@ function topicOf(it){
   const t=it.title.replace(/\s/g,'');
   return kws.find(k=>t.includes(k.replace(/\s/g,'')))||'기타';
 }
-// 의안 상태: 진행 중 / 가결 / 폐기·철회
-function statusOf(it){const st=it.stage||''; return /폐기|철회|부결/.test(st)?'dead':/가결/.test(st)?'passed':'live';}
-const ST_LABEL={live:'진행 중',passed:'가결',dead:'폐기·철회'};
+// 의안 상태: 진행 중 / 가결 / 대안반영(내용이 위원회 대안에 흡수됨) / 폐기·철회
+function statusOf(it){const st=it.stage||''; return /대안반영/.test(st)?'merged':/폐기|철회|부결/.test(st)?'dead':/가결/.test(st)?'passed':'live';}
+const ST_LABEL={live:'진행 중',passed:'가결',merged:'대안반영',dead:'폐기·철회'};
+// 검색 기간: 자료 자체 날짜(공포·선고·발의·기사일) 또는 시행일 기준. 날짜가 없거나 비정상(1950년 이전)일 때만 수집일 사용
+function inPeriod(i,from){const d=(i.date&&i.date>='1950')?i.date:i.collected; return d>=from||(i.effDate&&i.effDate>=from);}
 function row(i){
   const d=(i.date&&+i.date.slice(0,4)>=1950)?`${i.date.slice(2,4)}.${i.date.slice(5,7)}.${i.date.slice(8,10)}`:'-';
   const extra=[i.source, i.cat==='bill'?i.stage:''].filter(Boolean).map(esc).join(' · ');
@@ -417,8 +419,8 @@ function renderBrowse(){
   const hasStatus=TAB==='bill'||TAB==='notice';
   let stChips='';
   if(hasStatus){
-    const sc={live:0,passed:0,dead:0}; all.forEach(i=>sc[statusOf(i)]++);
-    stChips=`<div class="topics stfilter">${['live','passed','dead'].map(k=>
+    const sc={live:0,passed:0,merged:0,dead:0}; all.forEach(i=>sc[statusOf(i)]++);
+    stChips=`<div class="topics stfilter">${['live','passed','merged','dead'].map(k=>
       `<button type="button" class="topic${STATUS===k?' on':''}" data-status="${k}">${ST_LABEL[k]} ${sc[k]}</button>`).join('')}</div>`;
     all=all.filter(i=>statusOf(i)===STATUS);
   }
@@ -486,7 +488,7 @@ async function runSearch(){
   if(!IDX.demo) await loadMonths(n);
   const from=n?new Date(Date.now()+9*36e5-n*30*864e5).toISOString().slice(0,10):'0000';
   const words=q.split(/\s+/).filter(Boolean);
-  const hit=ITEMS.filter(i=>(i.collected>=from||i.date>=from)&&(TAB==='all'||i.cat===TAB)
+  const hit=ITEMS.filter(i=>inPeriod(i,from)&&(TAB==='all'||i.cat===TAB)
       &&words.every(w=>(i.title+' '+i.summary+' '+i.source+' '+(i.stage||'')+' '+(i.reason||'')).includes(w)))
     .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   window._HIT=hit;
