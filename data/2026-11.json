@@ -84,6 +84,20 @@
 "collected": "2026-11-11"
 },
 {
+"id": "news:http://www.wsobi.com/news/articleView.html?idxno=321482",
+"cat": "news",
+"title": "증권업계 '중개형ISA 순입금 이벤트' 실시·퇴직연금 계좌 활용 '개인투...",
+"date": "2026-11-11",
+"source": "wsobi.com",
+"url": "http://www.wsobi.com/news/articleView.html?idxno=321482",
+"summary": "삼성증권이 중개형ISA 계좌 신규 및 기존 고객을 고객을 대상으로 이벤트를 진행하는 한편, 한국투자증권은 퇴직연금 계좌를 활용한 '개인투자용 국채'를 판매한다. …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-11"
+},
+{
 "id": "bill:PRC_552DA4F1C80A4C278AFA65F9E6867B",
 "cat": "bill",
 "title": "근로기준법 일부개정법률안",
