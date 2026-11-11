@@ -5,7 +5,7 @@
 - 한 출처가 실패해도 나머지는 저장하고, 실패 내역은 data/index.json 에 남긴다.
 - 외부 라이브러리 없이 파이썬 기본 기능만 사용한다.
 """
-import json, os, re, sys, html, glob, datetime, urllib.request, urllib.parse
+import json, os, re, sys, html, glob, time, socket, datetime, urllib.request, urllib.parse, urllib.error
 from email.utils import parsedate_to_datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,10 +20,32 @@ NOTES = {}   # 출처별 부가 안내 (예: 개정이유 일부 실패)
 
 
 # ───────────────────────── 공통 ─────────────────────────
+RETRY_WAITS = (5, 20)   # 일시 장애(타임아웃·DNS·연결거부) 때 다시 시도하기 전 기다리는 초
+
+
+def _transient(e):
+    """잠깐 기다리면 풀릴 수 있는 오류인지 (4xx 같은 요청 자체 오류는 재시도하지 않음)"""
+    if isinstance(e, urllib.error.HTTPError):
+        return e.code >= 500 or e.code == 429
+    return isinstance(e, (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError))
+
+
 def http_json(url, headers=None, timeout=30):
     req = urllib.request.Request(url, headers={"User-Agent": "hr-issue-board/1.0", **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+    for n in range(len(RETRY_WAITS) + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.loads(r.read().decode("utf-8"))
+        except Exception as e:
+            if n >= len(RETRY_WAITS) or not _transient(e):
+                raise
+            print(f"[재시도 {n + 1}] {type(e).__name__}: {e}", file=sys.stderr)
+            time.sleep(RETRY_WAITS[n])
+
+
+def norm(s):
+    """법령명 비교용: 가운뎃점(· ㆍ ‧ ・)과 공백 차이를 없앤다"""
+    return re.sub(r"[\s·ㆍ‧・]", "", str(s or ""))
 
 
 def clean(s):
@@ -115,8 +137,10 @@ def law_search(oc, target, query, extra=None):
     p = {"OC": oc, "target": target, "type": "JSON", "query": query, "display": 20}
     p.update(extra or {})
     js = http_json(f"{LAW_URL}?{urllib.parse.urlencode(p)}")
-    root = js.get("LawSearch") or js.get("PrecSearch") or {}
-    rows = root.get(target) or []
+    root = js.get("LawSearch") or js.get("PrecSearch") or js.get("AdmRulSearch") or {}
+    if not root:  # 최상위 이름이 달라도 동작하게: 값이 dict인 첫 항목
+        root = next((v for v in js.values() if isinstance(v, dict)), {})
+    rows = root.get(target) or root.get("law" if target == "eflaw" else target) or []
     return rows if isinstance(rows, list) else [rows]
 
 
@@ -150,9 +174,13 @@ def _find_key(o, words):
     return None
 
 
-def law_reason(oc, mst):
-    """법령 본문에서 '제·개정이유 및 주요내용'을 꺼낸다 (현행법령 본문 JSON 권한 필요)"""
-    q = urllib.parse.urlencode({"OC": oc, "target": "law", "MST": mst, "type": "JSON"})
+def law_reason(oc, mst, ef=""):
+    """법령 본문에서 '제·개정이유 및 주요내용'을 꺼낸다 (현행법령 본문 JSON 권한 필요)
+    ef(시행일자)가 있으면 시행예정 본문(target=eflaw)으로 조회한다."""
+    p = {"OC": oc, "target": "law", "MST": mst, "type": "JSON"}
+    if ef:
+        p.update(target="eflaw", efYd=re.sub(r"\D", "", ef))
+    q = urllib.parse.urlencode(p)
     js = http_json(f"https://www.law.go.kr/DRF/lawService.do?{q}", timeout=40)
     part = _find_key(js, ["제개정이유", "개정이유"]) or _find_key(js, ["개정문"])
     if part is None:
@@ -168,7 +196,7 @@ def collect_laws(oc, existing=None):
     for name in CFG["laws"]:
         for r in law_search(oc, "law", name, {"sort": "ddes"}):
             title = clean(r.get("법령명한글"))
-            if name not in title:
+            if norm(name) not in norm(title):  # 가운뎃점 표기 차이(· / ㆍ)로 빠지지 않게
                 continue
             seq = r.get("법령일련번호") or r.get("법령ID")
             kind = clean(r.get("제개정구분명"))
@@ -181,7 +209,12 @@ def collect_laws(oc, existing=None):
                 mst=str(seq),
                 summary=f"공포번호 {clean(r.get('공포번호'))}" if r.get("공포번호") else ""))
 
-    # 개정이유: 이미 받아둔 건 다시 받지 않음. 본문 권한이 없거나 실패해도 목록 수집은 유지
+    fill_reasons(oc, out, existing, "법령")
+    return out
+
+
+def fill_reasons(oc, out, existing, note_key, upcoming=False):
+    """개정이유: 이미 받아둔 건 다시 받지 않음. 본문 권한이 없거나 실패해도 목록 수집은 유지"""
     reason_fail = 0
     for it in out:
         old = existing.get(it["id"], (None, {}))[1]
@@ -189,13 +222,69 @@ def collect_laws(oc, existing=None):
             it["reason"] = old["reason"]
             continue
         try:
-            it["reason"] = law_reason(oc, it["mst"])
+            it["reason"] = law_reason(oc, it["mst"], it["effDate"] if upcoming else "")
+            if not it["reason"] and upcoming:  # 시행예정 본문이 비면 일반 본문으로 한 번 더
+                it["reason"] = law_reason(oc, it["mst"])
         except Exception as e:
             reason_fail += 1
             print(f"[개정이유] {it['title']}: {e}", file=sys.stderr)
     if reason_fail:
         print(f"[개정이유] {reason_fail}건 실패", file=sys.stderr)
-    NOTES["법령"] = f"개정이유 {reason_fail}건 실패" if reason_fail else ""
+    NOTES[note_key] = f"개정이유 {reason_fail}건 실패" if reason_fail else ""
+
+
+def collect_upcoming_laws(oc, existing=None):
+    """시행예정 법령: 이미 공포됐지만 아직 시행 전인 개정본 (target=eflaw, nw=2)
+    현행법령 목록(target=law)에는 나오지 않아 '다가오는 시행일'이 비던 문제를 메운다."""
+    existing = existing or {}
+    out, seen = [], set()
+    for name in CFG["laws"]:
+        for r in law_search(oc, "eflaw", name, {"nw": 2, "sort": "efdes"}):
+            title = clean(r.get("법령명한글"))
+            if norm(name) not in norm(title):
+                continue
+            seq = r.get("법령일련번호") or r.get("법령ID")
+            eff = ymd(r.get("시행일자"))
+            if not seq or not eff or eff < TODAY.isoformat():
+                continue
+            # 한 개정본이 조문별로 시행일이 여러 개일 수 있음 → 첫 시행일은 law:{seq}, 나머지는 @시행일
+            iid = f"law:{seq}" if f"law:{seq}" not in seen else f"law:{seq}@{eff}"
+            if iid in seen:
+                continue
+            seen.add(iid)
+            kind = clean(r.get("제개정구분명"))
+            out.append(item(
+                id=iid, cat="law", title=f"{title} {kind}".strip(),
+                date=ymd(r.get("공포일자")), effDate=eff,
+                source=clean(r.get("소관부처명")) or "법제처",
+                url="https://www.law.go.kr/법령/" + urllib.parse.quote(title),
+                mst=str(seq), upcoming=True,
+                summary="시행예정" + (f" · 공포번호 {clean(r.get('공포번호'))}" if r.get("공포번호") else "")))
+    fill_reasons(oc, out, existing, "시행예정", upcoming=True)
+    return out
+
+
+def collect_admrules(oc):
+    """고시·훈령·예규(행정규칙): 최저임금 고시, 출산전후휴가 급여 상한액 고시, 보험료율 고시 등
+    법령이 아니라서 target=law 로는 안 잡히던 것. 최근 1년 안에 발령된 것만 저장."""
+    since = (TODAY - datetime.timedelta(days=CFG.get("admrul_days", 365))).isoformat()
+    out = []
+    for kw in CFG.get("admrul_keywords", []):
+        for r in law_search(oc, "admrul", kw, {"sort": "ddes"}):
+            seq = r.get("행정규칙일련번호") or r.get("행정규칙ID")
+            title = clean(r.get("행정규칙명"))
+            d = ymd(r.get("발령일자"))
+            if not seq or not title or (d and d < since):
+                continue
+            kind = clean(r.get("행정규칙종류")) or "고시"
+            rev = clean(r.get("제개정구분명"))
+            out.append(item(
+                id=f"admrul:{seq}", cat="law", title=f"{title} {rev}".strip(),
+                date=d, effDate=ymd(r.get("시행일자")),
+                source=clean(r.get("소관부처명")) or "법제처",
+                url="https://www.law.go.kr/행정규칙/" + urllib.parse.quote(title),
+                kind=kind, topic=kw,
+                summary=f"{kind}" + (f" · 발령번호 {clean(r.get('발령번호'))}" if r.get("발령번호") else "")))
     return out
 
 
@@ -278,7 +367,7 @@ def save(new_items, existing):
         if it["id"] in existing:
             fname, old = existing[it["id"]]
             # 기존 항목에 없던 정보(개정이유 등)가 새로 생겼으면 채워 넣기
-            for k in ("reason", "mst", "topic"):
+            for k in ("reason", "mst", "topic", "kind"):
                 if it.get(k) and not old.get(k):
                     months[fname][it["id"]][k] = it[k]
             # 의안 상태 변화: 단계가 바뀌면 내용 갱신 + 오늘 수집분으로 다시 올림
@@ -311,10 +400,13 @@ def main():
         old_idx = {}
     prev_stages = {i["id"][5:]: i["stage"] for _, i in existing.values() if i["cat"] == "bill"}
     results, status = [], {}
+    last_ok = dict(old_idx.get("lastOk") or {})   # 출처별 마지막 성공 시각 (하루 중 한 번이라도 성공했는지 화면에서 판단용)
 
     jobs = [
         ("의안", ["ASSEMBLY_KEY"], lambda: collect_bills(ENV("ASSEMBLY_KEY"), prev_stages)),
         ("법령", ["LAW_OC"], lambda: collect_laws(ENV("LAW_OC"), existing)),
+        ("시행예정", ["LAW_OC"], lambda: collect_upcoming_laws(ENV("LAW_OC"), existing)),
+        ("고시", ["LAW_OC"], lambda: collect_admrules(ENV("LAW_OC"))),
         ("판례", ["LAW_OC"], lambda: collect_cases(ENV("LAW_OC"))),
         ("뉴스", ["NAVER_ID", "NAVER_SECRET"], lambda: collect_news(ENV("NAVER_ID"), ENV("NAVER_SECRET"))),
     ]
@@ -326,6 +418,7 @@ def main():
             got = fn()
             results += got
             status[name] = f"정상 {len({g['id'] for g in got})}건"
+            last_ok[name] = NOW.strftime("%Y-%m-%d %H:%M")
             if NOTES.get(name):
                 status[name] += f" · {NOTES[name]}"
         except Exception as e:  # 한 출처 실패가 전체를 멈추지 않게
@@ -345,7 +438,7 @@ def main():
                              or (old_idx.get("today") if old_idx.get("firstRun") else None)
                              or (TODAY.isoformat() if len(existing) == 0 else None),
              "months": months, "total": total, "added": added, "stageChanged": changed,
-             "status": status}
+             "status": status, "lastOk": last_ok}
     json.dump(index, open(os.path.join(DATA, "index.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
     print(json.dumps(index, ensure_ascii=False, indent=1))
