@@ -56,6 +56,20 @@
 "collected": "2026-11-12"
 },
 {
+"id": "news:https://biz.sbs.co.kr/article_hub/20000345946?division=NAVER",
+"cat": "news",
+"title": "4대보험 자동이체, 주말·공휴일에도 신청·변경 가능",
+"date": "2026-11-12",
+"source": "biz.sbs.co.kr",
+"url": "https://biz.sbs.co.kr/article_hub/20000345946?division=NAVER",
+"summary": "국민건강보험공단이 4대 사회보험료 자동이체 신청·변경·해지 서비스 운영일을 오는 14일부터 연중 무휴로 확대 운영한다고 오늘(12일) 밝혔습니다. 건보공단 관계자…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-12"
+},
+{
 "id": "bill:PRC_19EDA542BF8246E4975C31A03A70A1",
 "cat": "bill",
 "title": "고용보험법 일부개정법률안",
