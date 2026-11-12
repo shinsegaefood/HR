@@ -70,6 +70,48 @@
 "collected": "2026-11-12"
 },
 {
+"id": "news:https://daily.hankooki.com/news/articleView.html?idxno=1424476",
+"cat": "news",
+"title": "홍은정 서울시의원, 효창운동장 최저임금 미달·연차수당 미지급 지적",
+"date": "2026-11-12",
+"source": "daily.hankooki.com",
+"url": "https://daily.hankooki.com/news/articleView.html?idxno=1424476",
+"summary": "홍은정 서울시의원(왼쪽)이 지난 11월10일 관광체육국 행정사무감사에서 효창운동장 경비 노동자의 최저임금 미달·연차수당 미지급 문제와 서울시의 관리·감독 부실을 …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-12"
+},
+{
+"id": "news:https://biz.heraldcorp.com/article/10935016?ref=naver",
+"cat": "news",
+"title": "“55~64세 월 35만원”…국민연금 받기까지 ‘노후 공백’ 메운다",
+"date": "2026-11-12",
+"source": "biz.heraldcorp.com",
+"url": "https://biz.heraldcorp.com/article/10935016?ref=naver",
+"summary": "그동안 노후소득은 국민연금·퇴직연금·개인연금으로 이뤄진 ‘3층 연금’이 떠받쳐 왔다. 사망보험금 유동화는 그 위에 한 층을 더 얹는 ‘4층’ 장치인 셈이다. 사망…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-12"
+},
+{
+"id": "news:https://www.cbci.co.kr/news/articleView.html?idxno=626121",
+"cat": "news",
+"title": "퇴직연금, 일시금 신청 안 하면 자동으로 연금 지급 추진…담보대출·기...",
+"date": "2026-11-12",
+"source": "cbci.co.kr",
+"url": "https://www.cbci.co.kr/news/articleView.html?idxno=626121",
+"summary": "퇴직연금 적립금을 중도에 인출하는 대신 활용할 수 있는 담보대출 상품 도입도 검토한다. 전문기관이 적립금을 운용하는 기금형 퇴직연금까지 활성화해 노동자의 노후소득…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-12"
+},
+{
 "id": "bill:PRC_19EDA542BF8246E4975C31A03A70A1",
 "cat": "bill",
 "title": "고용보험법 일부개정법률안",
