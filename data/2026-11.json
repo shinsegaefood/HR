@@ -98,6 +98,20 @@
 "collected": "2026-11-13"
 },
 {
+"id": "news:http://www.newsprime.co.kr/news/article.html?no=754855",
+"cat": "news",
+"title": "노동법 사각지대 노린 '가짜 3.3'·'쪼개기' 꼼수, 칼 빼 든 정부",
+"date": "2026-11-13",
+"source": "newsprime.co.kr",
+"url": "http://www.newsprime.co.kr/news/article.html?no=754855",
+"summary": "60세 이상 고령층 사업소득자 역시 6년 새 2배 급증한 가운데, 대표적 사례로 꼽히는 요양병원 소속 사업소득세 원천징수 간병인(2만56명)의 연 소득은 1510…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-13"
+},
+{
 "id": "bill:PRC_455DC3A315824160B133149967A347",
 "cat": "bill",
 "title": "남녀고용평등과 일·가정 양립 지원에 관한 법률 일부개정법률안",
