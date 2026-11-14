@@ -70,6 +70,48 @@
 "collected": "2026-11-14"
 },
 {
+"id": "news:http://www.econonews.co.kr/news/articleView.html?idxno=447185",
+"cat": "news",
+"title": "고용노동부, '가짜 3.3 위장고용'-'사업장 쪼개기' 의심 사업장 기획감...",
+"date": "2026-11-14",
+"source": "econonews.co.kr",
+"url": "http://www.econonews.co.kr/news/articleView.html?idxno=447185",
+"summary": "당시 72개 사업장에서 노동자 1070명에게 지급하지 않은 연장·야간·휴일근로수당 등 약 6억8500만원의 임금체불을 적발해 시정하고, 4대 보험에 가입하도록 조…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-14"
+},
+{
+"id": "news:https://www.cbci.co.kr/news/articleView.html?idxno=626858",
+"cat": "news",
+"title": "체인링크(LINK), 미국 퇴직연금 암호화폐 편입 논의 주목…실물자산 토...",
+"date": "2026-11-14",
+"source": "cbci.co.kr",
+"url": "https://www.cbci.co.kr/news/articleView.html?idxno=626858",
+"summary": "미국 퇴직연금의 암호화폐 투자 허용 논의와 실물자산 토큰화 확대 가능성이 관심을 모으고 있다. 주요 가상자산이 약세를 보이는 상황에서도 기관투자자의 디지털자산 접…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-14"
+},
+{
+"id": "news:https://www.newsworks.co.kr/news/articleView.html?idxno=903029",
+"cat": "news",
+"title": "[짠富테크] IRP에 퇴직금 들어왔다면…그대로 두지 말고 운용상태부터 ...",
+"date": "2026-11-14",
+"source": "newsworks.co.kr",
+"url": "https://www.newsworks.co.kr/news/articleView.html?idxno=903029",
+"summary": "회사를 옮기거나 퇴직하면 목돈인 퇴직금은 원칙적으로 개인형퇴직연금(IRP) 계좌로 들어온다. 문제는 그다음이다. 퇴직금이 IRP에 들어왔다고 알아서 예금이나 펀드…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-14"
+},
+{
 "id": "bill:PRC_A433D21256E04712AA62F585A1893A",
 "cat": "bill",
 "title": "근로자퇴직급여 보장법 일부개정법률안",
