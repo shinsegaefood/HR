@@ -98,6 +98,20 @@
 "collected": "2026-11-19"
 },
 {
+"id": "news:https://www.viva100.com/article/20261116501350",
+"cat": "news",
+"title": "비보장형 90% 늘고도 4대 은행에 밀린 지방은행 퇴직연금",
+"date": "2026-11-19",
+"source": "viva100.com",
+"url": "https://www.viva100.com/article/20261116501350",
+"summary": "지방금융지주 계열 은행들이 지난 1년간 원리금비보장형과 보장형 퇴직연금 성장률에서 모두 4대 시중은행을 앞질렀지만, 전체 적립금 증가율은 오히려 뒤처지는 역전 현…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-19"
+},
+{
 "id": "bill:PRC_H2F4N1N2M3M0K1L4K1K0S5S2Q1P2Q3",
 "cat": "bill",
 "title": "근로기준법 일부개정법률안",
