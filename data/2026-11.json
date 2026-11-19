@@ -84,6 +84,20 @@
 "collected": "2026-11-19"
 },
 {
+"id": "news:https://www.donga.com/news/Society/article/all/20261119/135051358/1",
+"cat": "news",
+"title": "육아휴직 중인 경찰·해경 부부가 신생아 학대…병원 신고로 입건",
+"date": "2026-11-19",
+"source": "donga.com",
+"url": "https://www.donga.com/news/Society/article/all/20261119/135051358/1",
+"summary": "병원 의료진이 아이의 몸에서 학대 정황을 발견해 신고하면서 범행이 드러난 것으로 전해졌다. 경장과 경사는 모두 현재 육아휴직 상태인 것으로 전해졌다. 경찰과 해경…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-19"
+},
+{
 "id": "bill:PRC_H2F4N1N2M3M0K1L4K1K0S5S2Q1P2Q3",
 "cat": "bill",
 "title": "근로기준법 일부개정법률안",
