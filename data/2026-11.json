@@ -56,6 +56,20 @@
 "collected": "2026-11-21"
 },
 {
+"id": "news:https://www.koreadaily.com/article/20261120200519328",
+"cat": "news",
+"title": "밴쿠버 생활임금 28.55달러, 최저임금보다 10달러 높아",
+"date": "2026-11-21",
+"source": "koreadaily.com",
+"url": "https://www.koreadaily.com/article/20261120200519328",
+"summary": "BC주 법정 최저임금인 18.25달러보다 10.30달러 높은 금액으로, 지역 근로자 3명 중 1명 이상은 이 기준에 미치지 못하는 임금을 받고 있다. BC 폴리시…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-21"
+},
+{
 "id": "bill:PRC_931D22F3EEAA432085D9991DD2B07D",
 "cat": "bill",
 "title": "국민연금법 일부개정법률안",
