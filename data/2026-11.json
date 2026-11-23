@@ -126,6 +126,20 @@
 "collected": "2026-11-23"
 },
 {
+"id": "news:https://www.newsis.com/view/NISX20261123_0003878939",
+"cat": "news",
+"title": "노동계 \"정부·여당, 올해 내 정년연장 입법 완수해야\"",
+"date": "2026-11-23",
+"source": "newsis.com",
+"url": "https://www.newsis.com/view/NISX20261123_0003878939",
+"summary": "민주당 정년연장특위가 1년 넘게 논의를 이어왔지만, 아직 구체적인 입법 성과를 내놓지 못하고 있다\"며 \"그 사이 노동자들은 정년퇴직과 국민연금 수급 사이의 소득 …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-23"
+},
+{
 "id": "news:https://www.laborplus.co.kr/news/articleView.html?idxno=41864",
 "cat": "news",
 "title": "간병노동자, 병원·소개소 지시받는데···'산재보험 적용'은?",
