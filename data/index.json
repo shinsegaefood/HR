@@ -1,5 +1,5 @@
 {
- "lastRun": "2026-11-24 14:37",
+ "lastRun": "2026-11-24 16:07",
  "today": "2026-11-24",
  "firstRun": false,
  "backfillDate": "2026-10-28",
@@ -7,23 +7,23 @@
   "2026-11.json",
   "2026-10.json"
  ],
- "total": 1946,
- "added": 3,
+ "total": 1955,
+ "added": 9,
  "stageChanged": 0,
  "status": {
   "의안": "정상 768건",
-  "법령": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "시행예정": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "고시": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "판례": "실패: <urlopen error [Errno -3] Temporary failure in name resolution>",
-  "뉴스": "정상 20건"
+  "법령": "정상 30건",
+  "시행예정": "정상 43건",
+  "고시": "정상 51건",
+  "판례": "정상 520건",
+  "뉴스": "정상 19건"
  },
  "lastOk": {
-  "의안": "2026-11-24 14:37",
-  "법령": "2026-11-24 14:18",
-  "시행예정": "2026-11-24 14:18",
-  "고시": "2026-11-24 14:18",
-  "판례": "2026-11-24 14:18",
-  "뉴스": "2026-11-24 14:37"
+  "의안": "2026-11-24 16:07",
+  "법령": "2026-11-24 16:07",
+  "시행예정": "2026-11-24 16:07",
+  "고시": "2026-11-24 16:07",
+  "판례": "2026-11-24 16:07",
+  "뉴스": "2026-11-24 16:07"
  }
 }
