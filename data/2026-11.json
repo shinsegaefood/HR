@@ -266,6 +266,48 @@
 "collected": "2026-11-24"
 },
 {
+"id": "news:https://www.lcnews.co.kr/news/articleView.html?idxno=211925",
+"cat": "news",
+"title": "[금융 게시판] 토스뱅크, 펀드 5만좌 돌파…케이뱅크, 퇴직연금 시장 진...",
+"date": "2026-11-24",
+"source": "lcnews.co.kr",
+"url": "https://www.lcnews.co.kr/news/articleView.html?idxno=211925",
+"summary": "케이뱅크는 최고 연 3.89% 금리를 제공하는 퇴직연금 정기예금을 출시하며 퇴직연금 운용상품 공급 시장에 진출했다. ◆ 토스뱅크, 펀드 출시 열흘 만에 5만좌…1…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-24"
+},
+{
+"id": "news:https://www.newsfreezone.co.kr/news/articleView.html?idxno=721037",
+"cat": "news",
+"title": "케이뱅크, 기업수신 전담 부서 앞세워 퇴직연금 시장 첫발",
+"date": "2026-11-24",
+"source": "newsfreezone.co.kr",
+"url": "https://www.newsfreezone.co.kr/news/articleView.html?idxno=721037",
+"summary": "케이뱅크가 최고 연 3.89% 금리의 확정급여형(DB) 퇴직연금 전용 정기예금을 내놓고 퇴직연금 상품 공급에 나섰다. 카카오뱅크에 이어 인터넷전문은행으로는 두 번…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-24"
+},
+{
+"id": "news:https://www.techm.kr/news/articleView.html?idxno=157741",
+"cat": "news",
+"title": "퇴직연금부터 앱테크·소상공인 지원까지...케이뱅크, 고객 접점 확대 ...",
+"date": "2026-11-24",
+"source": "techm.kr",
+"url": "https://www.techm.kr/news/articleView.html?idxno=157741",
+"summary": "이 일환으로 기업 대상 퇴직연금 전용 정기예금을 출시하고 만보기 서비스를 통해 일상 속 금융 혜택을 강화한다. 여기에 개인사업자를 대상으로 연말 맞이 프로모션을 …",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-24"
+},
+{
 "id": "bill:PRC_CFDE0A2943CA446C9F351FF11F19EA",
 "cat": "bill",
 "title": "근로기준법 일부개정법률안",
