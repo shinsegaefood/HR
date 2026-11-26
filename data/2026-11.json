@@ -308,6 +308,20 @@
 "collected": "2026-11-26"
 },
 {
+"id": "news:https://www.mk.co.kr/article/12219232",
+"cat": "news",
+"title": "퇴직연금 디폴트옵션, 어디가 제일 잘하나…미래에셋證, 업계 1위",
+"date": "2026-11-26",
+"source": "mk.co.kr",
+"url": "https://www.mk.co.kr/article/12219232",
+"summary": "4개 유형 고른 성장…공시 첫 분기比 61배↑ 적극투자형 TDF1, 적립금 기준 금융업권 1위 안정투자형 포트폴리오2, 3년 수익률 40.85% 퇴직연금 시장에서…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-26"
+},
+{
 "id": "bill:PRC_3F5D6C33850441EA9815BF24D1C6D2",
 "cat": "bill",
 "title": "국민건강보험법 일부개정법률안",
