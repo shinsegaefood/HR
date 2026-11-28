@@ -42,6 +42,20 @@
 "collected": "2026-11-28"
 },
 {
+"id": "news:https://www.sedaily.com/article/20120128?ref=naver",
+"cat": "news",
+"title": "“월급에서 꼬박꼬박 떼어갔는데”…국민연금 못 받을 위기 처한 13만명...",
+"date": "2026-11-28",
+"source": "sedaily.com",
+"url": "https://www.sedaily.com/article/20120128?ref=naver",
+"summary": "13개월 이상 4대 사회보험 장기 체납액 1조1217억원(2024년 말 기준) 가운데 국민연금은 4888억원(3만1000곳)으로 약 44%를 차지했다. 이후 20…",
+"effDate": "",
+"stage": "",
+"stageChanged": false,
+"tool": "",
+"collected": "2026-11-28"
+},
+{
 "id": "bill:PRC_1089AB3B40ED46FB93A113FC473E5A",
 "cat": "bill",
 "title": "최저임금법 일부개정법률안",
